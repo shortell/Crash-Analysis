@@ -1,0 +1,8 @@
+pandas
+scikit-learn
+matplotlib
+seaborn
+folium
+flask
+GDAL
+geopandas

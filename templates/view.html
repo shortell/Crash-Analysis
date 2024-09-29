@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Decile Table</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body>
+    <h1>Decile Table for {{ filename }}</h1>
+    <table>
+        <tr>
+            <th>Decile</th>
+            <th>Zip Code</th>
+            <th>Accident Count</th>
+            <th>Multiplier</th>
+        </tr>
+        {% for index, row in decile_table.iterrows() %}
+        <tr>
+            {% if loop.index == 1 or (decile_table.iloc[index - 1]['Decile'] != row['Decile']) %}
+                <td>{{ row['Decile'] }}</td>
+            {% else %}
+                <td></td>
+            {% endif %}
+            <td>{{ row['Zip Code'] }}</td>
+            <td>{{ row['Accident Count'] }}</td>
+            <td>{{ row['Multiplier'] }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+    <a href="{{ url_for('index') }}">Back to Upload</a>
+</body>
+</html>
