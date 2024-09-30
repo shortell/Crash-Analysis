@@ -1,46 +1,63 @@
 /* styles.css */
 
+/* Apply a box-sizing model for consistent sizing */
+* {
+    box-sizing: border-box;
+}
+
 body {
     font-family: Arial, sans-serif;
-    background-color: #f4f4f4;
+    background-color: #f0f4f8; /* Softer background color */
     margin: 0;
     padding: 20px;
 }
 
 h1, h2 {
-    color: #333;
+    color: #2c3e50; /* Darker shade for headings */
+}
+
+nav {
+    background-color: #3498db; /* Header background */
+    padding: 10px; /* Padding for nav */
+}
+
+nav a {
+    color: white; /* White text for nav links */
+    text-decoration: none;
+    margin: 0 15px; /* Spacing between nav links */
+    font-weight: bold; /* Bold text for emphasis */
+}
+
+nav a:hover {
+    text-decoration: underline; /* Underline on hover */
 }
 
 table {
-    width: 80%; /* Adjust the width for centering */
+    width: 80%; /* Center table */
     border-collapse: collapse;
     margin: 20px auto; /* Center the table */
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* Subtle shadow */
 }
 
 th, td {
     border: 1px solid #ddd;
-    padding: 8px;
+    padding: 10px;
     text-align: left;
 }
 
 th {
-    background-color: #4CAF50;
+    background-color: #3498db; /* Header color */
     color: white;
+    text-transform: uppercase; /* Capitalize table headers */
+    letter-spacing: 0.05em;
 }
 
 tr:nth-child(even) {
-    background-color: #f2f2f2;
+    background-color: #ecf0f1; /* Light gray for even rows */
 }
 
-a {
-    display: inline-block;
-    margin-top: 20px;
-    color: #4CAF50;
-    text-decoration: none;
-}
-
-a:hover {
-    text-decoration: underline;
+tr:nth-child(odd) {
+    background-color: #f9f9f9; /* Slightly lighter for odd rows */
 }
 
 form {
@@ -49,22 +66,41 @@ form {
 }
 
 input[type="file"] {
-    margin-bottom: 10px; /* Add space below file input */
+    margin-bottom: 10px; /* Space below file input */
 }
 
 input[type="submit"] {
-    background-color: #4CAF50;
+    background-color: #2ecc71; /* Brighter green for buttons */
     color: white;
     border: none;
     padding: 10px 20px;
     cursor: pointer;
+    font-size: 16px;
+    border-radius: 5px; /* Rounded button edges */
 }
 
 input[type="submit"]:hover {
-    background-color: #45a049; /* Darker shade on hover */
+    background-color: #27ae60; /* Darker green on hover */
 }
 
 ul {
     list-style-type: none; /* Remove bullet points */
     padding: 0; /* Remove default padding */
+}
+
+/* Style for the sorting arrow buttons */
+.sort-button {
+    color: #2980b9; /* Rich blue for sort buttons */
+    text-decoration: none; /* Remove underline */
+    font-size: 18px; /* Increase font size */
+    margin-left: 5px; /* Space between text and arrows */
+    padding: 2px 5px; /* Padding around the button */
+    background-color: #ecf8ff; /* Light blue background */
+    border-radius: 3px; /* Rounded corners */
+}
+
+.sort-button:hover {
+    color: #1b6b91; /* Darker blue on hover */
+    cursor: pointer; /* Show pointer cursor on hover */
+    background-color: #d6e9ff; /* Darker background on hover */
 }
