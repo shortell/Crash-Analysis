@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>View Data for {{ area | capitalize }}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+
+<body>
+    <h1>Accident Data for: {{ area.replace('_', ' ') | title }}</h1>
+
+    <h2>Total Accidents: {{ total_accidents }}</h2>
+    <h2>Average Accidents per Zip Code: {{ average_accidents_per_zip }}</h2>
+    <a href="{{ url_for('index') }}">Back to Selection</a>
+
+    <table border="1">
+        <thead>
+            <tr>
+                <th>
+                    Rank
+                    <a class="sort-button"
+                        href="{{ url_for('view_data', area=area, sort_by='Rank', order='asc') }}">&#9650;</a>
+                    <a class="sort-button"
+                        href="{{ url_for('view_data', area=area, sort_by='Rank', order='desc') }}">&#9660;</a>
+                </th>
+                <th>
+                    Decile
+                    <a class="sort-button"
+                        href="{{ url_for('view_data', area=area, sort_by='Decile', order='asc') }}">&#9650;</a>
+                    <a class="sort-button"
+                        href="{{ url_for('view_data', area=area, sort_by='Decile', order='desc') }}">&#9660;</a>
+                </th>
+                <th>
+                    Zip Code
+                    <a class="sort-button"
+                        href="{{ url_for('view_data', area=area, sort_by='Zip Code', order='asc') }}">&#9650;</a>
+                    <a class="sort-button"
+                        href="{{ url_for('view_data', area=area, sort_by='Zip Code', order='desc') }}">&#9660;</a>
+                </th>
+                {% if area == 'citywide' %}
+                <th>
+                    Borough
+                    <a class="sort-button"
+                        href="{{ url_for('view_data', area=area, sort_by='Borough', order='asc') }}">&#9650;</a>
+                    <a class="sort-button"
+                        href="{{ url_for('view_data', area=area, sort_by='Borough', order='desc') }}">&#9660;</a>
+                </th>
+                {% endif %}
+                <th>
+                    Accident Count
+                    <a class="sort-button"
+                        href="{{ url_for('view_data', area=area, sort_by='Accident Count', order='asc') }}">&#9650;</a>
+                    <a class="sort-button"
+                        href="{{ url_for('view_data', area=area, sort_by='Accident Count', order='desc') }}">&#9660;</a>
+                </th>
+                <th>
+                    Accident Likelihood Factor
+                    <a class="sort-button"
+                        href="{{ url_for('view_data', area=area, sort_by='Accident Likelihood Factor', order='asc') }}">&#9650;</a>
+                    <a class="sort-button"
+                        href="{{ url_for('view_data', area=area, sort_by='Accident Likelihood Factor', order='desc') }}">&#9660;</a>
+                </th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for index, row in decile_table.iterrows() %}
+            <tr>
+                <td>{{ row['Rank'] | int }}</td>
+                <td>{{ row['Decile'] | int }}</td>
+                <td>{{ row['Zip Code'] | int }}</td>
+                {% if area == 'citywide' %}
+                <td>{{ row['Borough'] }}</td>
+                {% endif %}
+                <td>{{ row['Accident Count'] | int }}</td>
+                <td>{{ row['Accident Likelihood Factor'] }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+</body>
+
+</html>

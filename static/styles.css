@@ -1,21 +1,28 @@
-/* styles.css */
+/* Combined styles.css */
 
-/* Apply a box-sizing model for consistent sizing */
+/* Basic reset and consistent sizing */
 * {
+    margin: 0;
+    padding: 0;
     box-sizing: border-box;
 }
 
-body {
+/* Body and HTML setup */
+body,
+html {
+    height: 100%;
     font-family: Arial, sans-serif;
     background-color: #f0f4f8; /* Softer background color */
-    margin: 0;
     padding: 20px;
 }
 
+/* Headings */
 h1, h2 {
     color: #2c3e50; /* Darker shade for headings */
+    text-align: center;
 }
 
+/* Navigation bar */
 nav {
     background-color: #3498db; /* Header background */
     padding: 10px; /* Padding for nav */
@@ -32,6 +39,76 @@ nav a:hover {
     text-decoration: underline; /* Underline on hover */
 }
 
+/* Main container */
+.container {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start; /* Align heading at the top */
+    align-items: center;
+    height: 100%;
+    text-align: center;
+    padding-top: 50px; /* Space from the top */
+}
+
+/* Button container */
+.button-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+    flex-grow: 1; /* Ensures buttons stay centered vertically */
+    justify-content: flex-start; /* Centers buttons upward within available space */
+    margin-top: 20px; /* Add margin to move buttons up */
+}
+
+/* Buttons */
+.btn {
+    width: 200px;
+    padding: 15px 20px;
+    margin: 10px 0;
+    font-size: 1.2rem;
+    color: #fff;
+    background-color: #007bff;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+.btn:hover {
+    background-color: #0056b3;
+}
+
+/* Forms */
+form {
+    margin: 20px auto; /* Center the form */
+    text-align: center; /* Center text in form */
+}
+
+input[type="file"] {
+    margin-bottom: 10px; /* Space below file input */
+}
+
+input[type="submit"] {
+    background-color: #2ecc71; /* Brighter green for buttons */
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    cursor: pointer;
+    font-size: 16px;
+    border-radius: 5px; /* Rounded button edges */
+}
+
+input[type="submit"]:hover {
+    background-color: #27ae60; /* Darker green on hover */
+}
+
+/* Links */
+a {
+    text-decoration: none;
+}
+
+/* Tables */
 table {
     width: 80%; /* Center table */
     border-collapse: collapse;
@@ -60,35 +137,13 @@ tr:nth-child(odd) {
     background-color: #f9f9f9; /* Slightly lighter for odd rows */
 }
 
-form {
-    margin: 20px auto; /* Center the form */
-    text-align: center; /* Center text in form */
-}
-
-input[type="file"] {
-    margin-bottom: 10px; /* Space below file input */
-}
-
-input[type="submit"] {
-    background-color: #2ecc71; /* Brighter green for buttons */
-    color: white;
-    border: none;
-    padding: 10px 20px;
-    cursor: pointer;
-    font-size: 16px;
-    border-radius: 5px; /* Rounded button edges */
-}
-
-input[type="submit"]:hover {
-    background-color: #27ae60; /* Darker green on hover */
-}
-
+/* Lists */
 ul {
     list-style-type: none; /* Remove bullet points */
     padding: 0; /* Remove default padding */
 }
 
-/* Style for the sorting arrow buttons */
+/* Sorting buttons */
 .sort-button {
     color: #2980b9; /* Rich blue for sort buttons */
     text-decoration: none; /* Remove underline */
