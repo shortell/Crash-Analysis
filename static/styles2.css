@@ -1,0 +1,197 @@
+/* Basic reset and consistent sizing */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+/* Body and HTML setup */
+body,
+html {
+    height: 100%;
+    font-family: 'Arial', sans-serif;
+    background-color: #f5f7fa; /* Softer, lighter background color */
+    padding: 20px;
+    line-height: 1.6; /* Improved line height for readability */
+}
+
+/* Headings */
+h1, h2 {
+    color: #2c3e50; /* Darker shade for headings */
+    text-align: center;
+    margin-bottom: 20px; /* Spacing below headings */
+}
+
+/* Navigation bar */
+nav {
+    background-color: #3498db; /* Header background */
+    padding: 10px; /* Padding for nav */
+}
+
+nav a {
+    color: white; /* White text for nav links */
+    text-decoration: none;
+    margin: 0 15px; /* Spacing between nav links */
+    font-weight: bold; /* Bold text for emphasis */
+}
+
+nav a:hover {
+    text-decoration: underline; /* Underline on hover */
+}
+
+/* Main container */
+.container {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start; /* Align heading at the top */
+    align-items: center;
+    height: 100%;
+    text-align: center;
+    padding-top: 50px; /* Space from the top */
+}
+
+/* Button container */
+.button-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+    flex-grow: 1; /* Ensures buttons stay centered vertically */
+    justify-content: flex-start; /* Centers buttons upward within available space */
+    margin-top: 20px; /* Add margin to move buttons up */
+}
+
+/* Buttons */
+.btn {
+    width: 200px;
+    padding: 15px 20px;
+    margin: 10px 0;
+    font-size: 1.2rem;
+    color: #fff;
+    background-color: #007bff;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+.btn:hover {
+    background-color: #0056b3;
+}
+
+/* Back to Selection Button */
+.back-button {
+    display: inline-block;
+    padding: 10px 20px;
+    background-color: #3498db;
+    color: #fff;
+    border-radius: 5px;
+    text-decoration: none;
+    font-size: 1.1rem;
+    margin-top: 20px;
+    text-align: center;
+    transition: background-color 0.3s ease;
+}
+
+.back-button:hover {
+    background-color: #2980b9;
+}
+
+/* Forms */
+form {
+    margin: 20px auto; /* Center the form */
+    text-align: center; /* Center text in form */
+}
+
+input[type="file"] {
+    margin-bottom: 10px; /* Space below file input */
+}
+
+input[type="submit"] {
+    background-color: #2ecc71; /* Brighter green for buttons */
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    cursor: pointer;
+    font-size: 16px;
+    border-radius: 5px; /* Rounded button edges */
+}
+
+input[type="submit"]:hover {
+    background-color: #27ae60; /* Darker green on hover */
+}
+
+/* Links */
+a {
+    text-decoration: none;
+}
+
+/* Tables */
+table {
+    width: 90%; /* Increased width for better use of space */
+    border-collapse: collapse;
+    margin: 30px auto; /* Center the table with larger margin */
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* Subtle shadow */
+}
+
+th, td {
+    border: 1px solid #ddd;
+    padding: 12px 15px;
+    text-align: left;
+    font-size: 0.9rem; /* Adjusted font size */
+}
+
+th {
+    background-color: #3498db; /* Header color */
+    color: white;
+    text-transform: uppercase; /* Capitalize table headers */
+    letter-spacing: 0.05em;
+}
+
+tr:nth-child(even) {
+    background-color: #ecf0f1; /* Light gray for even rows */
+}
+
+tr:nth-child(odd) {
+    background-color: #f9f9f9; /* Slightly lighter for odd rows */
+}
+
+td {
+    font-size: 0.95rem; /* Slightly larger text in table */
+}
+
+/* Sorting buttons */
+.sort-button {
+    color: #2980b9; /* Rich blue for sort buttons */
+    text-decoration: none; /* Remove underline */
+    font-size: 18px; /* Increase font size */
+    margin-left: 5px; /* Space between text and arrows */
+    padding: 2px 5px; /* Padding around the button */
+    background-color: #ecf8ff; /* Light blue background */
+    border-radius: 3px; /* Rounded corners */
+}
+
+.sort-button:hover {
+    color: #1b6b91; /* Darker blue on hover */
+    cursor: pointer; /* Show pointer cursor on hover */
+    background-color: #d6e9ff; /* Darker background on hover */
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    h1, h2 {
+        font-size: 1.5rem; /* Smaller font size for smaller screens */
+    }
+
+    table, th, td {
+        font-size: 0.85rem; /* Reduced size for table on small screens */
+    }
+
+    .btn, .back-button {
+        width: 100%; /* Full width buttons on mobile */
+    }
+
+    table {
+        width: 100%; /* Make table full width on mobile */
+    }
+}

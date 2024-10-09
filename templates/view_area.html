@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>View Data for {{ area | capitalize }}</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles2.css') }}">
 </head>
 
 <body>
@@ -13,7 +13,10 @@
 
     <h2>Total Accidents: {{ total_accidents }}</h2>
     <h2>Average Accidents per Zip Code: {{ average_accidents_per_zip }}</h2>
-    <a href="{{ url_for('index') }}">Back to Selection</a>
+    <a href="{{ url_for('index') }}" class="back-button">Back to Selection</a>
+
+    <iframe src="{{ url_for('static', filename=area + '/interactive_heatmap.html') }}" width="100%" height="750px"></iframe>
+
 
     <table border="1">
         <thead>
@@ -55,13 +58,13 @@
                     <a class="sort-button"
                         href="{{ url_for('view_data', area=area, sort_by='Accident Count', order='desc') }}">&#9660;</a>
                 </th>
-                <th>
+                <!-- <th>
                     Accident Likelihood Factor
                     <a class="sort-button"
                         href="{{ url_for('view_data', area=area, sort_by='Accident Likelihood Factor', order='asc') }}">&#9650;</a>
                     <a class="sort-button"
                         href="{{ url_for('view_data', area=area, sort_by='Accident Likelihood Factor', order='desc') }}">&#9660;</a>
-                </th>
+                </th> -->
             </tr>
         </thead>
         <tbody>
@@ -74,7 +77,7 @@
                 <td>{{ row['Borough'] }}</td>
                 {% endif %}
                 <td>{{ row['Accident Count'] | int }}</td>
-                <td>{{ row['Accident Likelihood Factor'] }}</td>
+                <!-- <td>{{ row['Accident Likelihood Factor'] }}</td> -->
             </tr>
             {% endfor %}
         </tbody>
