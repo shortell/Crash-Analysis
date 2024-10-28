@@ -44,13 +44,13 @@ jobs:
       - name: Build with PyInstaller
         run: |
           pyinstaller --onefile --windowed \
-            --add-data "templates:templates" \
-            --add-data "static:static" \
-            --add-data "borough_assets:borough_assets" \
-            --add-data "data:data" \
-            --icon icon/crash_analysis.icns
+          --add-data "templates:templates" \
+          --add-data "static:static" \
+          --add-data "borough_assets:borough_assets" \
+          --add-data "data:data" \
+          --icon icon/crash_analysis.icns \
+          app.py
 
-            app.py
           ls -al dist  # Check the dist directory contents
 
       # Step 7: Ensure the binary exists and zip it
