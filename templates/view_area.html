@@ -6,6 +6,25 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>View Data for {{ area | capitalize }}</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='styles2.css') }}">
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const accordions = document.querySelectorAll('.accordion-content');
+            accordions.forEach(content => content.style.display = 'none');
+        });
+
+        function toggleAccordion(id) {
+            const content = document.getElementById(id);
+            const button = document.getElementById(`button-${id}`);
+
+            if (content.style.display === 'none' || content.style.display === '') {
+                content.style.display = 'table-row-group';
+                button.textContent = 'Collapse';
+            } else {
+                content.style.display = 'none';
+                button.textContent = 'Expand';
+            }
+        }
+    </script>
 </head>
 
 <body>
@@ -13,76 +32,63 @@
 
     <h2>Total Accidents: {{ total_accidents }}</h2>
     <h2>Average Accidents per Zip Code: {{ average_accidents_per_zip }}</h2>
-    <a href="{{ url_for('index') }}" class="back-button">Back to Selection</a>
+    
+    <div class="button-container">
+        <a href="{{ url_for('index') }}" class="back-button">Back to Selection</a>
+        <a href="{{ url_for('view_heatmap', area=area) }}" class="center-button">View Heatmap</a>
 
-    <iframe src="{{ url_for('static', filename=area + '/interactive_heatmap.html') }}" width="100%" height="750px"></iframe>
+        <form action="{{ url_for('upload_csv', area=area) }}" method="POST" enctype="multipart/form-data" class="upload-form">
+            <input type="file" name="file" accept=".csv" required>
+            <button class="right-button" type="submit">Upload CSV</button>
+        </form>
+    </div>
 
-
-    <table border="1">
+    <table border="1" class="accordion-table">
         <thead>
             <tr>
-                <th>
-                    Rank
-                    <a class="sort-button"
-                        href="{{ url_for('view_data', area=area, sort_by='Rank', order='asc') }}">&#9650;</a>
-                    <a class="sort-button"
-                        href="{{ url_for('view_data', area=area, sort_by='Rank', order='desc') }}">&#9660;</a>
-                </th>
-                <th>
-                    Decile
-                    <a class="sort-button"
-                        href="{{ url_for('view_data', area=area, sort_by='Decile', order='asc') }}">&#9650;</a>
-                    <a class="sort-button"
-                        href="{{ url_for('view_data', area=area, sort_by='Decile', order='desc') }}">&#9660;</a>
-                </th>
-                <th>
-                    Zip Code
-                    <a class="sort-button"
-                        href="{{ url_for('view_data', area=area, sort_by='Zip Code', order='asc') }}">&#9650;</a>
-                    <a class="sort-button"
-                        href="{{ url_for('view_data', area=area, sort_by='Zip Code', order='desc') }}">&#9660;</a>
-                </th>
-                {% if area == 'citywide' %}
-                <th>
-                    Borough
-                    <a class="sort-button"
-                        href="{{ url_for('view_data', area=area, sort_by='Borough', order='asc') }}">&#9650;</a>
-                    <a class="sort-button"
-                        href="{{ url_for('view_data', area=area, sort_by='Borough', order='desc') }}">&#9660;</a>
-                </th>
-                {% endif %}
-                <th>
-                    Accident Count
-                    <a class="sort-button"
-                        href="{{ url_for('view_data', area=area, sort_by='Accident Count', order='asc') }}">&#9650;</a>
-                    <a class="sort-button"
-                        href="{{ url_for('view_data', area=area, sort_by='Accident Count', order='desc') }}">&#9660;</a>
-                </th>
-                <!-- <th>
-                    Accident Likelihood Factor
-                    <a class="sort-button"
-                        href="{{ url_for('view_data', area=area, sort_by='Accident Likelihood Factor', order='asc') }}">&#9650;</a>
-                    <a class="sort-button"
-                        href="{{ url_for('view_data', area=area, sort_by='Accident Likelihood Factor', order='desc') }}">&#9660;</a>
-                </th> -->
+                <th>Decile</th>
+                <th>Total Accidents in Decile</th>
+                <th>Percentage of Total Accidents</th>
+                <th>Action</th>
             </tr>
         </thead>
         <tbody>
-            {% for index, row in decile_table.iterrows() %}
+            {% for decile, group in decile_table.groupby('Decile', sort=False) | sort(attribute='Decile', reverse=True) %}
+            <tr class="accordion-header">
+                <td>{{ decile | int }}</td>
+                <td>{{ group['Accident Count'].sum() | int }}</td>
+                <td>{{ (group['Accident Count'].sum() / total_accidents * 100) | round(2) }}%</td>
+                <td>
+                    <button id="button-content-{{ decile }}" class="expand-button"
+                        onclick="toggleAccordion('content-{{ decile }}')">Expand</button>
+                </td>
+            </tr>
+        <tbody id="content-{{ decile }}" class="accordion-content">
             <tr>
-                <td>{{ row['Rank'] | int }}</td>
-                <td>{{ row['Decile'] | int }}</td>
-                <td>{{ row['Zip Code'] | int }}</td>
+                {% if area == 'citywide' %}
+                <th>Borough</th>
+                {% endif %}
+                <th>Zip Code</th>
+                <th>Accident Count</th>
+                <th>Accident Likelihood</th>
+            </tr>
+            {% for index, row in group.iterrows() %}
+            <tr>
                 {% if area == 'citywide' %}
                 <td>{{ row['Borough'] }}</td>
                 {% endif %}
+                <td>{{ row['Zip Code'] | int }}</td>
                 <td>{{ row['Accident Count'] | int }}</td>
-                <!-- <td>{{ row['Accident Likelihood Factor'] }}</td> -->
+                <td>{{ (row['Accident Count'] / average_accidents_per_zip) | round(2) }}</td>
             </tr>
             {% endfor %}
+            <tr class="accordion-end">
+                <td colspan="{{ 4 if area == 'citywide' else 3 }}">End of Decile {{ decile }}</td>
+            </tr>
+        </tbody>
+        {% endfor %}
         </tbody>
     </table>
-
 </body>
 
 </html>

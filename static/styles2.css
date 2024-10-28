@@ -10,188 +10,154 @@ body,
 html {
     height: 100%;
     font-family: 'Arial', sans-serif;
-    background-color: #f5f7fa; /* Softer, lighter background color */
+    background-color: #f5f7fa;
     padding: 20px;
-    line-height: 1.6; /* Improved line height for readability */
+    line-height: 1.6;
+    color: #2c3e50;
 }
 
 /* Headings */
 h1, h2 {
-    color: #2c3e50; /* Darker shade for headings */
+    color: #2c3e50;
     text-align: center;
-    margin-bottom: 20px; /* Spacing below headings */
+    margin-bottom: 20px;
 }
 
-/* Navigation bar */
-nav {
-    background-color: #3498db; /* Header background */
-    padding: 10px; /* Padding for nav */
-}
-
-nav a {
-    color: white; /* White text for nav links */
-    text-decoration: none;
-    margin: 0 15px; /* Spacing between nav links */
-    font-weight: bold; /* Bold text for emphasis */
-}
-
-nav a:hover {
-    text-decoration: underline; /* Underline on hover */
-}
-
-/* Main container */
-.container {
-    display: flex;
-    flex-direction: column;
-    justify-content: flex-start; /* Align heading at the top */
-    align-items: center;
-    height: 100%;
-    text-align: center;
-    padding-top: 50px; /* Space from the top */
-}
-
-/* Button container */
+/* Button Container */
+/* Button Container */
 .button-container {
     display: flex;
-    flex-direction: column;
+    justify-content: space-between; /* Spread buttons across */
     align-items: center;
-    width: 100%;
-    flex-grow: 1; /* Ensures buttons stay centered vertically */
-    justify-content: flex-start; /* Centers buttons upward within available space */
-    margin-top: 20px; /* Add margin to move buttons up */
+    width: 90%; /* Match table width */
+    max-width: 1200px; /* Optional: Limit container width */
+    margin: 0 auto 20px auto; /* Center the container horizontally */
+    padding-bottom: 10px;
+    padding-left: 10px;  /* Push Back button away from edge */
+    padding-right: 10px; /* Push Upload button away from edge */
 }
 
-/* Buttons */
-.btn {
-    width: 200px;
-    padding: 15px 20px;
-    margin: 10px 0;
-    font-size: 1.2rem;
-    color: #fff;
-    background-color: #007bff;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-    transition: background-color 0.3s ease;
-}
-
-.btn:hover {
-    background-color: #0056b3;
-}
-
-/* Back to Selection Button */
-.back-button {
+/* Button Styles */
+.back-button, .center-button, .right-button {
     display: inline-block;
-    padding: 10px 20px;
+    width: 200px; /* Ensure consistent button width */
+    padding: 10px 0; /* Vertical padding for centered text */
     background-color: #3498db;
-    color: #fff;
+    font-weight: bold;
+    color: white;
     border-radius: 5px;
     text-decoration: none;
     font-size: 1.1rem;
-    margin-top: 20px;
-    text-align: center;
+    text-align: center; /* Center the text */
+    cursor: pointer;
+    border: 1px solid #3498db;
     transition: background-color 0.3s ease;
 }
 
-.back-button:hover {
+/* Hover effect for buttons */
+.back-button:hover, .center-button:hover, .right-button:hover {
     background-color: #2980b9;
 }
 
-/* Forms */
-form {
-    margin: 20px auto; /* Center the form */
-    text-align: center; /* Center text in form */
+/* Align Back Button to the Left */
+.back-button {
+    margin-left: -10px; /* Adjust closer to left */
 }
 
-input[type="file"] {
-    margin-bottom: 10px; /* Space below file input */
+/* Center the View Heatmap Button */
+.center-button {
+    margin: 0 auto; /* Center horizontally */
 }
 
-input[type="submit"] {
-    background-color: #2ecc71; /* Brighter green for buttons */
-    color: white;
-    border: none;
-    padding: 10px 20px;
-    cursor: pointer;
-    font-size: 16px;
-    border-radius: 5px; /* Rounded button edges */
-}
-
-input[type="submit"]:hover {
-    background-color: #27ae60; /* Darker green on hover */
-}
-
-/* Links */
-a {
-    text-decoration: none;
+/* Align Upload Button to the Right */
+.right-button {
+    margin-right: -10px; /* Adjust closer to right */
+    text-align: center; /* Center the text */
 }
 
 /* Tables */
 table {
-    width: 90%; /* Increased width for better use of space */
+    width: 90%; /* Same width as button container */
     border-collapse: collapse;
-    margin: 30px auto; /* Center the table with larger margin */
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* Subtle shadow */
+    margin: 30px auto;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }
 
 th, td {
     border: 1px solid #ddd;
     padding: 12px 15px;
     text-align: left;
-    font-size: 0.9rem; /* Adjusted font size */
+    font-size: 1rem;
+    color: #2c3e50;
 }
 
 th {
-    background-color: #3498db; /* Header color */
+    background-color: #2e8b57;
     color: white;
-    text-transform: uppercase; /* Capitalize table headers */
+    text-transform: uppercase;
     letter-spacing: 0.05em;
 }
 
+/* Styling alternating rows */
 tr:nth-child(even) {
-    background-color: #ecf0f1; /* Light gray for even rows */
+    background-color: #ecf0f1;
 }
 
 tr:nth-child(odd) {
-    background-color: #f9f9f9; /* Slightly lighter for odd rows */
+    background-color: #f9f9f9;
 }
 
-td {
-    font-size: 0.95rem; /* Slightly larger text in table */
+/* Accordion Header Row */
+.accordion-header {
+    background-color: #3498db;
+    color: white;
+    text-align: center;
+    font-weight: bold;
+    transition: background-color 0.3s ease;
 }
 
-/* Sorting buttons */
-.sort-button {
-    color: #2980b9; /* Rich blue for sort buttons */
-    text-decoration: none; /* Remove underline */
-    font-size: 18px; /* Increase font size */
-    margin-left: 5px; /* Space between text and arrows */
-    padding: 2px 5px; /* Padding around the button */
-    background-color: #ecf8ff; /* Light blue background */
-    border-radius: 3px; /* Rounded corners */
+/* Accordion Content Row */
+.accordion-content {
+    display: none;
+    background-color: #ecf0f1;
 }
 
-.sort-button:hover {
-    color: #1b6b91; /* Darker blue on hover */
-    cursor: pointer; /* Show pointer cursor on hover */
-    background-color: #d6e9ff; /* Darker background on hover */
+/* Expand/Collapse Button */
+.expand-button {
+    padding: 5px 10px;
+    background-color: #3498db;
+    color: white;
+    font-weight: bold;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
 }
 
-/* Responsive */
+.expand-button:hover {
+    background-color: #2980b9;
+}
+
+/* Responsive Design */
 @media (max-width: 768px) {
     h1, h2 {
-        font-size: 1.5rem; /* Smaller font size for smaller screens */
+        font-size: 1.5rem;
     }
 
     table, th, td {
-        font-size: 0.85rem; /* Reduced size for table on small screens */
+        font-size: 0.85rem;
     }
 
-    .btn, .back-button {
-        width: 100%; /* Full width buttons on mobile */
+    .button-container {
+        flex-direction: column; /* Stack buttons vertically */
+        align-items: stretch;
+    }
+
+    .back-button, .center-button, .right-button {
+        width: 100%; /* Full width on smaller screens */
+        margin-bottom: 10px;
     }
 
     table {
-        width: 100%; /* Make table full width on mobile */
+        width: 100%; /* Full width for small screens */
     }
 }

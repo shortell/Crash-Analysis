@@ -229,7 +229,7 @@ def save_heatmap(heatmap, borough):
     """
     Save the generated heatmap to the heatmap directory.
     """
-    heatmap_dir = os.path.join(BASE_DIR, borough, 'heatmap')
+    heatmap_dir = os.path.join('static', borough)
     os.makedirs(heatmap_dir, exist_ok=True)
     heatmap.save(os.path.join(heatmap_dir, 'interactive_heatmap.html'))
 
