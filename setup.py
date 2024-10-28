@@ -1,16 +1,10 @@
 from setuptools import setup
 
-APP = ['app.py']
-DATA_FILES = [
-    ('templates', ['templates/index.html']),
-    ('static', []),
-    ('borough_assets', []),
-]
+APP = ['app.py']  # Replace with your main Python script
+DATA_FILES = []  # Include any non-Python files you need
 OPTIONS = {
     'argv_emulation': True,
-    'packages': ['flask', 'requests'],  # Include necessary packages explicitly
-    'includes': ['flask', 'requests'],  # Force inclusion of modules
-    'excludes': ['tkinter'],  # Optional: Exclude unnecessary modules
+    'packages': ['your_required_package'],  # Add any packages your app needs
 }
 
 setup(
