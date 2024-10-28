@@ -50,7 +50,9 @@ jobs:
           --add-data "data:data" \
           --icon icon/crash_analysis.icns \
           --osx-bundle-identifier "com.example.crash-analysis" \
+          --hidden-import pipeline_v3 \
           app.py
+
 
           ls -al dist  # Check the dist directory contents
 
