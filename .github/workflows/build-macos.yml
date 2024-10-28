@@ -11,10 +11,10 @@ jobs:
 
     steps:
       - name: Check out the repository
-        uses: actions/checkout@v4  # Updated to v4 to use Node.js 20
+        uses: actions/checkout@v4
 
       - name: Set up Python
-        uses: actions/setup-python@v5  # Updated to v5 to use Node.js 20
+        uses: actions/setup-python@v5
         with:
           python-version: '3.x'
 
@@ -27,7 +27,8 @@ jobs:
         run: pip install py2app
 
       - name: Build the .app file
-        run: python setup.py py2app
+        run: |
+          python setup.py py2app || cat dist/*.log  # Display logs if the build fails
 
       - name: Zip the .app file
         run: |
@@ -35,7 +36,7 @@ jobs:
           zip -r app.zip app.app
 
       - name: Upload the ZIP to GitHub Artifacts
-        uses: actions/upload-artifact@v3  # Still on v3 (no Node.js warning for this)
+        uses: actions/upload-artifact@v3
         with:
           name: app-macos.zip
           path: dist/app.zip

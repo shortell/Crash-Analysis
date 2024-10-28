@@ -1,14 +1,16 @@
 from setuptools import setup
 
-APP = ['app.py']  # Entry point of the app
+APP = ['app.py']
 DATA_FILES = [
     ('templates', ['templates/index.html']),
-    ('static', []),  # Include static files if any
-    ('borough_assets', []),  # Include any CSV files or directories
+    ('static', []),
+    ('borough_assets', []),
 ]
 OPTIONS = {
-    'argv_emulation': True,  # Ensures the app opens correctly when double-clicked
-    'packages': ['flask'],  # Include Flask and other dependencies
+    'argv_emulation': True,
+    'packages': ['flask', 'requests'],  # Include necessary packages explicitly
+    'includes': ['flask', 'requests'],  # Force inclusion of modules
+    'excludes': ['tkinter'],  # Optional: Exclude unnecessary modules
 }
 
 setup(
