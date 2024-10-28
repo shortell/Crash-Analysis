@@ -51,15 +51,6 @@ jobs:
           which python  # Confirm the Python path
           ls -la  # Check directory permissions
 
-      # Step 8: Use Xvfb for virtual display (if needed)
-      - name: Install Xvfb
-        run: brew install Xvfb
-
-      - name: Start Xvfb
-        run: |
-          Xvfb :99 &
-          export DISPLAY=:99
-
       # Step 9: Build the .app file using py2app
       - name: Build the .app file
         run: |
