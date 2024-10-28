@@ -1,4 +1,4 @@
-name: Build macOS Executable
+name: Build macOS Binary
 
 on:
   push:
@@ -40,10 +40,10 @@ jobs:
       - name: Install PyInstaller
         run: pip install pyinstaller
 
-      # Step 6: Build the Executable with PyInstaller
+      # Step 6: Build the macOS Binary with PyInstaller
       - name: Build with PyInstaller
         run: |
-          pyinstaller --onefile --noconsole \
+          pyinstaller --onefile \
           --add-data "templates:templates" \
           --add-data "static:static" \
           --add-data "borough_assets:borough_assets" \
@@ -53,15 +53,15 @@ jobs:
 
           ls -al dist  # Check the dist directory contents
 
-      # Step 7: Ensure the Executable Exists and Zip It
-      - name: Zip the Executable
+      # Step 7: Ensure the Binary Exists and Zip It
+      - name: Zip the Binary
         run: |
           cd dist
           if [ -f "app" ]; then
-            echo "Packaging the executable..."
+            echo "Packaging the binary..."
             zip -r app-macos.zip app
           else
-            echo "Error: Executable not found!"
+            echo "Error: Binary not found!"
             exit 1
           fi
 
