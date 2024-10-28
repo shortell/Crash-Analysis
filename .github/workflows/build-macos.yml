@@ -1,4 +1,4 @@
-name: Build macOS .app
+name: Build macOS Binary
 
 on:
   push:
@@ -22,7 +22,7 @@ jobs:
 
       # Step 3: Cache Python dependencies to speed up installation
       - name: Cache Python Packages
-        uses: actions/cache@v4  # Updated to v4
+        uses: actions/cache@v4
         with:
           path: ~/.cache/pip
           key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
@@ -34,54 +34,38 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install setuptools wheel
-          pip install --upgrade --no-cache-dir -r requirements.txt
+          pip install --no-cache-dir -r requirements.txt
 
-      # Step 5: Install py2app
-      - name: Install py2app
-        run: pip install py2app
-
-      # Step 6: Debug: List installed packages
-      - name: List installed packages
-        run: pip freeze
-
-      # Step 7: Debug: Verify Python environment
-      - name: Verify Python environment
-        run: |
-          python --version
-          which python
-          ls -la
-
-      # Step 8: Build the .app file using py2app
-      - name: Build the .app file
-        run: |
-          mkdir -p dist  # Ensure dist directory exists
-          python setup.py py2app || echo "Build failed. Check dependencies or setup.py."
-          ls -al dist  # Verify the dist directory contents
-
-      # Step 9: Fallback to pyinstaller if py2app fails
-      - name: Install pyinstaller (Fallback)
-        if: failure()
+      # Step 5: Install PyInstaller
+      - name: Install PyInstaller
         run: pip install pyinstaller
 
-      - name: Build with pyinstaller (Fallback)
-        if: failure()
-        run: pyinstaller --onefile --windowed app.py
+      # Step 6: Build the macOS binary with PyInstaller
+      - name: Build with PyInstaller
+        run: |
+          pyinstaller --onefile --windowed \
+            --add-data "templates:templates" \
+            --add-data "static:static" \
+            --add-data "borough_assets:borough_assets" \
+            --add-data "data:data" \
+            app.py
+          ls -al dist  # Check the dist directory contents
 
-      # Step 10: Ensure the .app exists and zip it
-      - name: Zip the .app file
+      # Step 7: Ensure the binary exists and zip it
+      - name: Zip the binary
         run: |
           cd dist
-          if [ -d "app.app" ]; then
-            echo "Packaging .app file..."
-            zip -r app-macos.zip app.app
+          if [ -f "app" ]; then
+            echo "Packaging the binary..."
+            zip -r app-macos.zip app
           else
-            echo "Error: app.app not found!"
+            echo "Error: Binary not found!"
             exit 1
           fi
 
-      # Step 11: Upload the ZIP to GitHub Artifacts
+      # Step 8: Upload the ZIP to GitHub Artifacts
       - name: Upload the ZIP to GitHub Artifacts
-        uses: actions/upload-artifact@v4  # Updated to v4
+        uses: actions/upload-artifact@v4
         with:
           name: app-macos.zip
           path: dist/app-macos.zip
