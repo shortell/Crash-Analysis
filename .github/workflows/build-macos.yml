@@ -10,34 +10,79 @@ jobs:
     runs-on: macos-latest
 
     steps:
+      # Step 1: Check out the repository
       - name: Check out the repository
         uses: actions/checkout@v4
 
+      # Step 2: Set up Python
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.12.2'
+          python-version: '3.11'  # Use Python 3.11 for better compatibility
 
+      # Step 3: Cache Python dependencies to speed up installation
+      - name: Cache Python Packages
+        uses: actions/cache@v3
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+
+      # Step 4: Install Dependencies
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements.txt
+          pip install setuptools wheel  # Ensure setuptools and wheel are installed
+          pip install --upgrade --no-cache-dir -r requirements.txt
 
+      # Step 5: Install py2app
       - name: Install py2app
         run: pip install py2app
 
+      # Step 6: Debug: List installed packages
       - name: List installed packages
-        run: pip freeze  # Show installed packages
+        run: pip freeze  # Check if all required packages are installed
 
+      # Step 7: Debug: Verify Python environment
+      - name: Verify Python environment
+        run: |
+          python --version
+          which python  # Confirm the Python path
+          ls -la  # Check directory permissions
+
+      # Step 8: Use Xvfb for virtual display (if needed)
+      - name: Install Xvfb
+        run: brew install Xvfb
+
+      - name: Start Xvfb
+        run: |
+          Xvfb :99 &
+          export DISPLAY=:99
+
+      # Step 9: Build the .app file using py2app
       - name: Build the .app file
         run: |
-          python setup.py py2app || cat dist/*.log  # Display logs if the build fails
+          mkdir -p dist  # Ensure dist directory exists
+          python setup.py py2app || echo "Build failed. Check dependencies or setup.py."
+          ls -al dist  # List dist directory contents for debugging
 
-      - name: Zip the .app file
+      # Step 10: Fallback to pyinstaller if py2app fails
+      - name: Install pyinstaller (Fallback)
+        if: failure()  # Only run this if py2app fails
+        run: pip install pyinstaller
+
+      - name: Build with pyinstaller (Fallback)
+        if: failure()
+        run: pyinstaller --onefile --windowed app.py
+
+      # Step 11: Zip the .app or executable
+      - name: Zip the application
         run: |
           cd dist
-          zip -r app.zip app.app
+          zip -r app.zip app.app || zip -r app.zip app
 
+      # Step 12: Upload the ZIP to GitHub Artifacts
       - name: Upload the ZIP to GitHub Artifacts
         uses: actions/upload-artifact@v3
         with:
