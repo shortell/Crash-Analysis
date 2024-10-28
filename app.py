@@ -127,6 +127,10 @@ def open_browser():
     """Open the default web browser to the app's home page."""
     webbrowser.open_new("http://127.0.0.1:5000/")
 
+def run_app():
+    """Run the Flask app in a background thread."""
+    app.run(debug=False, use_reloader=False)
+
 if __name__ == '__main__':
-    app.run(debug=True)
+    run_app()
     Timer(1, open_browser).start()
