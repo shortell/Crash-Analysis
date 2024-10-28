@@ -30,6 +30,7 @@ OPTIONS = {
         'os', 'glob', 'threading', 'webbrowser'  # Standard library modules (optional)
     ],
     'packages': [],  # Add external packages if needed, e.g., ['pandas', 'requests']
+    'standalone': True
 }
 
 # Setup configuration
