@@ -48,7 +48,6 @@ jobs:
           --add-data "static:static" \
           --add-data "borough_assets:borough_assets" \
           --add-data "data:data" \
-          --hidden-import=pipeline_v3 \
           app.py
 
           ls -al dist  # Check the dist directory contents
