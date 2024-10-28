@@ -57,10 +57,10 @@ jobs:
         run: |
           sed -i '' 's/hiddenimports=\[\]/hiddenimports=\["pipeline_v3"\]/' app.spec
 
-      # Step 8: Build the Binary Using the Spec File
+      # Step 8: Build the Binary Using the Spec File with Overwrite Option
       - name: Build with Spec File
         run: |
-          pyinstaller app.spec
+          pyinstaller -y app.spec  # Use -y to overwrite output directory if it exists
           ls -al dist  # Check the dist directory contents
 
       # Step 9: Ensure the .app Exists and Zip It
