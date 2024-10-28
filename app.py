@@ -54,10 +54,12 @@ def get_base_path():
 BASE_DIR = get_base_path()
 
 # Adjust directory paths
-TEMPLATES_DIR = os.path.join(BASE_DIR, 'templates')
-STATIC_DIR = os.path.join(BASE_DIR, 'static')
-DATA_DIR = os.path.join(BASE_DIR, 'data', "nyc_shapefile", "nyc_zip_code_map.shp")
-BOROUGH_ASSETS_DIR = os.path.join(BASE_DIR, 'borough_assets')
+# TEMPLATES_DIR = os.path.join(BASE_DIR, 'templates')
+# STATIC_DIR = os.path.join(BASE_DIR, 'static')
+# DATA_DIR = os.path.join(BASE_DIR, 'data', "nyc_shapefile", "nyc_zip_code_map.shp")
+# BOROUGH_ASSETS_DIR = os.path.join(BASE_DIR, 'borough_assets')
+
+DATA_DIR_REL = "data/nyc_shapefile/nyc_zip_code_map.shp"
 
 
 
@@ -65,9 +67,10 @@ def get_latest_csv(borough: str) -> str:
     """
     Get the CSV file from the specified borough's unprocessed data directory.
     """
-    borough_dir = os.path.join(BOROUGH_ASSETS_DIR, borough, 'unprocessed_data')
+    # borough_dir = os.path.join(BOROUGH_ASSETS_DIR, borough, 'unprocessed_data')
+    borough_dir_rel = f"borough_assets/{borough}/unprocessed_data"
 
-    csv_files = glob.glob(os.path.join(borough_dir, "*.csv"))
+    csv_files = glob.glob(os.path.join(borough_dir_rel, "*.csv"))
     if not csv_files:
         raise FileNotFoundError(
             f"No CSV file found in the directory for '{borough}'.")
@@ -152,18 +155,20 @@ def save_master_table(df, borough):
     """
     Save the master table DataFrame to a CSV file in the processed_data directory.
     """
-    processed_dir = os.path.join(BOROUGH_ASSETS_DIR, borough, 'processed_data')
+    # processed_dir = os.path.join(BOROUGH_ASSETS_DIR, borough, 'processed_data')
+    processed_dir_rel = f"borough_assets/{borough}/processed_data"
     # Ensure the processed_data directory exists
-    os.makedirs(processed_dir, exist_ok=True)
-    df.to_csv(os.path.join(processed_dir, borough + "_master_table.csv"), index=False)
+    # os.makedirs(processed_dir_rel, exist_ok=True)
+    df.to_csv(os.path.join(processed_dir_rel, borough + "_master_table.csv"), index=False)
 
 
 def load_master_table(borough):
     """
     Load the master table from the processed_data directory if it exists.
     """
-    processed_dir = os.path.join(BASE_DIR, borough, 'processed_data')
-    master_file = os.path.join(processed_dir, f"{borough}_master_table.csv")
+    # processed_dir = os.path.join(BASE_DIR, borough, 'processed_data')
+    processed_dir_rel = f"borough_assets/{borough}/processed_data"
+    master_file = os.path.join(processed_dir_rel, f"{borough}_master_table.csv")
     if os.path.exists(master_file):
         return pd.read_csv(master_file)
     return None
@@ -187,7 +192,7 @@ def validate_borough_zip_codes(borough_df, citywide_df, borough):
     return validated_borough_df
 
 
-def create_interactive_heatmap(borough: str, decile_table, shapefile_path=DATA_DIR):
+def create_interactive_heatmap(borough: str, decile_table, shapefile_path=DATA_DIR_REL):
     """
     Create an interactive heatmap for the selected borough or citywide using the decile table and NYC's shapefile.
     """
@@ -251,9 +256,10 @@ def save_heatmap(heatmap, borough):
     """
     Save the generated heatmap to the heatmap directory.
     """
-    heatmap_dir = os.path.join(STATIC_DIR, borough)
-    os.makedirs(heatmap_dir, exist_ok=True)
-    heatmap.save(os.path.join(heatmap_dir, 'interactive_heatmap.html'))
+    # heatmap_dir = os.path.join(STATIC_DIR, borough)
+    heatmap_dir_rel = f"static/{borough}"
+    # os.makedirs(heatmap_dir, exist_ok=True)
+    heatmap.save(os.path.join(heatmap_dir_rel, 'interactive_heatmap.html'))
 
 
 def main(borough: str, k: int):
@@ -291,11 +297,11 @@ def main(borough: str, k: int):
 
         master_table = group_and_rank_accidents(combined_df)
 
-        print(f"Pipeline completed for {borough}.")
-        pd.set_option('display.max_rows', None)
-        pd.set_option('display.max_columns', None)
-        pd.set_option('display.width', None)
-        print(master_table)
+        # print(f"Pipeline completed for {borough}.")
+        # pd.set_option('display.max_rows', None)
+        # pd.set_option('display.max_columns', None)
+        # pd.set_option('display.width', None)
+        # print(master_table)
 
         # Save the computed master table to processed_data
         save_master_table(master_table, borough)
@@ -352,8 +358,8 @@ def allowed_file(filename):
 @app.route('/')
 def index():
     """ Display the available boroughs and datasets. """
-    index_path = os.path.join(TEMPLATES_DIR, 'index.html')
-    return render_template(index_path)
+    # index_path = os.path.join(TEMPLATES_DIR, 'templates/index.html')
+    return render_template('templates/index.html')
 
 
 @app.route('/view/<area>')
@@ -388,7 +394,7 @@ def view_data(area):
     decile_table = decile_table.sort_values(by=sort_by, ascending=ascending)
 
     # Render the unified template
-    view_area_path = os.path.join(TEMPLATES_DIR, 'view_area.html')
+    view_area_path = 'templates/view_area.html'
     return render_template(
         view_area_path,
         area=area,
@@ -402,8 +408,9 @@ def view_heatmap(area):
     """
     Display the heatmap for the selected area (borough or citywide).
     """
-    heatmap_path =  os.path.join(STATIC_DIR, area, 'interactive_heatmap.html')
-    return render_template(heatmap_path, area=area)
+    # heatmap_path =  os.path.join(STATIC_DIR, area, 'interactive_heatmap.html')
+    heatmap_path_rel = f"static/{area}/interactive_heatmap.html"
+    return render_template(heatmap_path_rel, area=area)
 
 def delete_files(path_pattern):
     """Delete all files matching the given path pattern."""
@@ -419,15 +426,18 @@ def upload_csv(area):
     cached_tables.pop(area, None)
 
     # Delete all CSV files for the area in unprocessed_data and processed_data directories
-    unprocessed_data_path_pattern = os.path.join(BOROUGH_ASSETS_DIR, area, 'unprocessed_data', '*.csv')
-    processed_data_path_pattern = os.path.join(BOROUGH_ASSETS_DIR, area, 'processed_data', '*.csv')
-    delete_files(unprocessed_data_path_pattern)
-    delete_files(processed_data_path_pattern)
+    # unprocessed_data_path_pattern = os.path.join(BOROUGH_ASSETS_DIR, area, 'unprocessed_data', '*.csv')
+    # processed_data_path_pattern = os.path.join(BOROUGH_ASSETS_DIR, area, 'processed_data', '*.csv')
+    unprocessed_data_path_pattern_rel = f"borough_assets/{area}/unprocessed_data/*.csv"
+    processed_data_path_pattern_rel = f"borough_assets/{area}/processed_data"
+    delete_files(unprocessed_data_path_pattern_rel)
+    delete_files(processed_data_path_pattern_rel)
 
     # Delete the heatmap for the area, if it exists
-    heatmap_path = os.path.join(STATIC_DIR, area, "interactive_heatmap.html")
-    if os.path.exists(heatmap_path):
-        os.remove(heatmap_path)
+    # heatmap_path = os.path.join(STATIC_DIR, area, "interactive_heatmap.html")
+    heatmap_path_rel = f"static/{area}/interactive_heatmap.html"
+    if os.path.exists(heatmap_path_rel):
+        os.remove(heatmap_path_rel)
 
     # Handle the file upload
     if 'file' not in request.files:
@@ -452,8 +462,13 @@ def open_browser():
 
 def run_app():
     """Run the Flask app in a background thread."""
-    app.run(debug=False, use_reloader=False)
+    app.run(debug=True, use_reloader=False)
 
 if __name__ == '__main__':
     run_app()
-    Timer(1, open_browser).start()
+    # Timer(1, open_browser).start()
+    # Debugging: Print paths to confirm they're correct
+    # print(f"TEMPLATES_DIR: {TEMPLATES_DIR}")
+    # print(f"STATIC_DIR: {STATIC_DIR}")
+    # print(f"DATA_DIR: {DATA_DIR}")
+    # print(f"BOROUGH_ASSETS_DIR: {BOROUGH_ASSETS_DIR}")
