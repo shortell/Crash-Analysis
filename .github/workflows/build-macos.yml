@@ -40,35 +40,42 @@ jobs:
       - name: Install PyInstaller
         run: pip install pyinstaller
 
-      # Step 6: Build the macOS binary with PyInstaller
-      - name: Build with PyInstaller
+      # Step 6: Generate the Spec File
+      - name: Generate Spec File
         run: |
-          pyinstaller --onefile --windowed \
+          pyinstaller --onefile --windowed --name app \
           --add-data "templates:templates" \
           --add-data "static:static" \
           --add-data "borough_assets:borough_assets" \
           --add-data "data:data" \
           --icon icon/crash_analysis.icns \
           --osx-bundle-identifier "com.example.crash-analysis" \
-          --hidden-import pipeline_v3 \
           app.py
 
+      # Step 7: Modify the Spec File to Include `pipeline_v3`
+      - name: Modify the Spec File
+        run: |
+          sed -i '' 's/hiddenimports=\[\]/hiddenimports=\["pipeline_v3"\]/' app.spec
 
+      # Step 8: Build the Binary Using the Spec File
+      - name: Build with Spec File
+        run: |
+          pyinstaller app.spec
           ls -al dist  # Check the dist directory contents
 
-      # Step 7: Ensure the binary exists and zip it
-      - name: Zip the binary
+      # Step 9: Ensure the .app Exists and Zip It
+      - name: Zip the .app Bundle
         run: |
           cd dist
-          if [ -f "app" ]; then
-            echo "Packaging the binary..."
-            zip -r app-macos.zip app
+          if [ -d "app.app" ]; then
+            echo "Packaging the .app bundle..."
+            zip -r app-macos.zip app.app
           else
-            echo "Error: Binary not found!"
+            echo "Error: .app bundle not found!"
             exit 1
           fi
 
-      # Step 8: Upload the ZIP to GitHub Artifacts
+      # Step 10: Upload the ZIP to GitHub Artifacts
       - name: Upload the ZIP to GitHub Artifacts
         uses: actions/upload-artifact@v4
         with:
