@@ -45,9 +45,6 @@ def get_latest_csv(borough: str) -> str:
     Get the CSV file from the specified borough's unprocessed data directory.
     """
     borough_dir = os.path.join(BASE_DIR, borough, 'unprocessed_data')
-    if not os.path.isdir(borough_dir):
-        raise FileNotFoundError(f"The directory for '{
-                                borough}' does not exist.")
 
     csv_files = glob.glob(os.path.join(borough_dir, "*.csv"))
     if not csv_files:
