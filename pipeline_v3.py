@@ -41,13 +41,11 @@ def get_latest_csv(borough: str) -> str:
     """
     borough_dir = os.path.join(BASE_DIR, borough, 'unprocessed_data')
     if not os.path.isdir(borough_dir):
-        raise FileNotFoundError(f"The directory for '{
-                                borough}' does not exist.")
+        raise FileNotFoundError(f"The directory for {borough} does not exist.")
 
     csv_files = glob.glob(os.path.join(borough_dir, "*.csv"))
     if not csv_files:
-        raise FileNotFoundError(
-            f"No CSV file found in the directory for '{borough}'.")
+        raise FileNotFoundError(f"No CSV file found in the directory for {borough}.")
 
     return csv_files[0]
 
@@ -132,8 +130,7 @@ def save_master_table(df, borough):
     processed_dir = os.path.join(BASE_DIR, borough, 'processed_data')
     # Ensure the processed_data directory exists
     os.makedirs(processed_dir, exist_ok=True)
-    df.to_csv(os.path.join(processed_dir, f"{
-              borough}_master_table.csv"), index=False)
+    df.to_csv(os.path.join(processed_dir, f"{borough}_master_table.csv"), index=False)
 
 
 def load_master_table(borough):
@@ -251,8 +248,7 @@ def main(borough: str, k: int):
         print(f"Loaded precomputed master table for {borough}.")
     else:
         # If no precomputed master table is found, process the data
-        print(f"No precomputed master table found for {
-              borough}. Starting pipeline...")
+        print(f"No precomputed master table found for {borough}. Starting pipeline...")
 
         file_name = get_latest_csv(borough)
         df = load_accident_data(file_name)
