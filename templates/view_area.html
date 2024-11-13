@@ -79,7 +79,9 @@
                 {% endif %}
                 <td>{{ row['Zip Code'] | int }}</td>
                 <td>{{ row['Accident Count'] | int }}</td>
-                <td>{{ (row['Accident Count'] / average_accidents_per_zip) | round(2) }}</td>
+                <td>{{ row['Accident Likelihood'] | float }}</td>
+
+                
             </tr>
             {% endfor %}
             <tr class="accordion-end">
