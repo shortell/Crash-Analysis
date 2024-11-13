@@ -24,7 +24,6 @@ h1, h2 {
 }
 
 /* Button Container */
-/* Button Container */
 .button-container {
     display: flex;
     justify-content: space-between; /* Spread buttons across */
