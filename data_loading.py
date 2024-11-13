@@ -14,8 +14,7 @@ def get_latest_csv(borough: str) -> str:
 
     csv_files = glob.glob(os.path.join(borough_dir, "*.csv"))
     if not csv_files:
-        raise FileNotFoundError(
-            f"No CSV file found in the directory for {borough}.")
+        raise FileNotFoundError(f"No CSV file found in the directory for {borough}.")
 
     return csv_files[0]
 

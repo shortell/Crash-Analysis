@@ -25,8 +25,7 @@ def main(borough: str, k: int):
         print(f"Loaded precomputed master table for {borough}.")
     else:
         # If no precomputed master table is found, process the data
-        print(f"No precomputed master table found for {
-              borough}. Starting pipeline...")
+        print(f"No precomputed master table found for {borough}. Starting pipeline...")
 
         file_name = get_latest_csv(borough)
         df = load_accident_data(file_name)
