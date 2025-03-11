@@ -20,7 +20,7 @@ def filter_accidents(df):
     return df_zip_lat_long, df_no_zip_lat_long, df_zip_no_lat_long, df_no_zip_no_lat_long, df_null_crash_count
 
 
-def assign_zip_codes_knn(df_zip_lat_long, df_no_zip_lat_long, k=1):
+def assign_zip_codes_knn(df_zip_lat_long, df_no_zip_lat_long, k):
     """
     Assign zip codes to accidents missing them using K-Nearest Neighbors (KNN).
     """

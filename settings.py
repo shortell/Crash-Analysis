@@ -1,5 +1,3 @@
-import os
-
 BASE_DIR = "borough_assets"
 AREA_DIRECTORIES = ['brooklyn', 'citywide', 'manhattan', 'queens', 'staten_island', 'the_bronx']
 DATA_DIRECTORIES = ['unprocessed_data', 'processed_data', 'heatmap']

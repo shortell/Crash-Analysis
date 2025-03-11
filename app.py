@@ -4,7 +4,6 @@ from zip_code_search import get_all_unique_zip_codes, search_zip_code
 import os
 import glob
 import pandas as pd
-import math
 
 
 app = Flask(__name__)
