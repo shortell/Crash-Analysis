@@ -80,6 +80,7 @@ table {
     border-collapse: collapse;
     margin: 30px auto;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    table-layout: fixed; /* Ensure fixed table layout */
 }
 
 th, td {
@@ -113,8 +114,12 @@ tr:nth-child(odd) {
     text-align: center;
     font-weight: bold;
     transition: background-color 0.3s ease;
+    position: sticky; /* Use sticky positioning */
 }
 
+.extra-col.hidden-cell {
+    visibility: hidden; /* Takes up space but content is invisible */
+}
 /* Accordion Content Row */
 .accordion-content {
     display: none;

@@ -1,7 +1,8 @@
 import geopandas as gpd
 import folium
-import os
-from settings import SHAPEFILE_PATH
+
+SHAPEFILE_PATH = "data/nyc_shapefile/nyc_zip_code_map.shp"
+
 
 def create_interactive_heatmap(borough: str, decile_table, shapefile_path=SHAPEFILE_PATH):
     """
@@ -14,9 +15,8 @@ def create_interactive_heatmap(borough: str, decile_table, shapefile_path=SHAPEF
         decile_table['Zip Code'] = decile_table['Zip Code'].apply(
             lambda x: str(int(x)).zfill(5)).str.strip()
 
-        if borough.lower() != "citywide":
-            decile_table = decile_table[decile_table['Borough'].str.lower(
-            ) == borough.lower()]
+        if borough != "Citywide":
+            decile_table = decile_table[decile_table['Borough'] == borough]
             zip_codes_in_borough = decile_table['Zip Code'].unique()
             nyc_gdf = nyc_gdf[nyc_gdf['ZIPCODE'].isin(zip_codes_in_borough)]
 
@@ -37,7 +37,7 @@ def create_interactive_heatmap(borough: str, decile_table, shapefile_path=SHAPEF
             data=merged_gdf,
             columns=['ZIPCODE', 'Decile'],
             key_on='feature.properties.ZIPCODE',
-            fill_color='OrRd',
+            fill_color='OrRd_r',
             fill_opacity=0.7,
             line_opacity=0.2,
             legend_name='Accident Decile',
@@ -49,7 +49,9 @@ def create_interactive_heatmap(borough: str, decile_table, shapefile_path=SHAPEF
             centroid = row['geometry'].centroid
             zip_code = row['ZIPCODE']
             accidents = row['Accident Count']
-            tooltip_text = f"Zip Code: {zip_code}<br>Accidents: {accidents}"
+            decile = row['Decile']
+            rank = row['Rank']
+            tooltip_text = f"Zip Code: {zip_code}<br>Accidents: {accidents}<br>Decile: {decile}<br>Rank: {rank}"
 
             folium.Marker(
                 location=[centroid.y, centroid.x],
@@ -61,12 +63,4 @@ def create_interactive_heatmap(borough: str, decile_table, shapefile_path=SHAPEF
 
     except Exception as e:
         print(f"An error occurred in create_interactive_heatmap: {e}")
-
-
-def save_heatmap(heatmap, borough):
-    """
-    Save the generated heatmap to the heatmap directory.
-    """
-    heatmap_dir = os.path.join('static', borough)
-    os.makedirs(heatmap_dir, exist_ok=True)
-    heatmap.save(os.path.join(heatmap_dir, 'interactive_heatmap.html'))
+        return None

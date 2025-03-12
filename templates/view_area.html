@@ -6,49 +6,33 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>View Data for {{ area | capitalize }}</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='styles2.css') }}">
-    <script>
-        document.addEventListener('DOMContentLoaded', function () {
-            const accordions = document.querySelectorAll('.accordion-content');
-            accordions.forEach(content => content.style.display = 'none');
-        });
 
-        function toggleAccordion(id) {
-            const content = document.getElementById(id);
-            const button = document.getElementById(`button-${id}`);
-
-            if (content.style.display === 'none' || content.style.display === '') {
-                content.style.display = 'table-row-group';
-                button.textContent = 'Collapse';
-            } else {
-                content.style.display = 'none';
-                button.textContent = 'Expand';
-            }
-        }
-    </script>
 </head>
 
 <body>
-    <h1>Accident Data for: {{ area.replace('_', ' ') | title }}</h1>
+    <h1>Accident Data for: {{ area }}</h1>
 
     <h2>Total Accidents: {{ total_accidents }}</h2>
     <h2>Average Accidents per Zip Code: {{ average_accidents_per_zip }}</h2>
-    
+
     <div class="button-container">
         <a href="{{ url_for('index') }}" class="back-button">Back to Selection</a>
-        <a href="{{ url_for('view_heatmap', area=area) }}" class="center-button">View Heatmap</a>
+        <a href="{{ url_for('view_map', area=area) }}" class="right-button">View Heatmap</a>
 
-        <form action="{{ url_for('upload_csv', area=area) }}" method="POST" enctype="multipart/form-data" class="upload-form">
-            <input type="file" name="file" accept=".csv" required>
-            <button class="right-button" type="submit">Upload CSV</button>
-        </form>
+
     </div>
 
     <table border="1" class="accordion-table">
+
+
         <thead>
-            <tr>
+            <tr class="accordion-header">
                 <th>Decile</th>
                 <th>Total Accidents in Decile</th>
                 <th>Percentage of Total Accidents</th>
+                {% if area == 'Citywide' %}
+                <th class="extra-col" style="display: none;" >&nbsp;</th>
+                {% endif %}
                 <th>Action</th>
             </tr>
         </thead>
@@ -58,39 +42,46 @@
                 <td>{{ decile | int }}</td>
                 <td>{{ group['Accident Count'].sum() | int }}</td>
                 <td>{{ (group['Accident Count'].sum() / total_accidents * 100) | round(2) }}%</td>
+                {% if area == 'Citywide' %}
+                <td class="extra-col" style="display: none;" >&nbsp;</td>  <!-- Extra cell to match the child row columns -->
+                {% endif %}
                 <td>
-                    <button id="button-content-{{ decile }}" class="expand-button"
-                        onclick="toggleAccordion('content-{{ decile }}')">Expand</button>
+                    <button id="button-content-{{ decile }}" class="expand-button" onclick="toggleAccordion('content-{{ decile }}')">Expand</button>
                 </td>
             </tr>
-        <tbody id="content-{{ decile }}" class="accordion-content">
-            <tr>
-                {% if area == 'citywide' %}
-                <th>Borough</th>
-                {% endif %}
-                <th>Zip Code</th>
-                <th>Accident Count</th>
-                <th>Accident Likelihood</th>
-            </tr>
-            {% for index, row in group.iterrows() %}
-            <tr>
-                {% if area == 'citywide' %}
-                <td>{{ row['Borough'] }}</td>
-                {% endif %}
-                <td>{{ row['Zip Code'] | int }}</td>
-                <td>{{ row['Accident Count'] | int }}</td>
-                <td>{{ row['Accident Likelihood'] | float }}</td>
-
-                
-            </tr>
+        
+            <tbody id="content-{{ decile }}" class="accordion-content">
+                <tr class="accordion-content-header">
+                    <th>Rank</th>
+                    <th>Zip Code</th>
+                    {% if area == 'Citywide' %}
+                    <th>Borough</th>
+                    {% endif %}
+                    <th>Accident Count</th>
+                    <th>Accident Likelihood</th>
+                </tr>
+                {% for index, row in group.iterrows() %}
+                <tr class="accordion-content-row">
+                    <td>{{ row['Rank'] | int}}</td>
+                    <td>{{ row['Zip Code'] | int }}</td>
+                    {% if area == 'Citywide' %}
+                    <td>{{ row['Borough'] }}</td>
+                    {% endif %}
+                    <td>{{ row['Accident Count'] | int }}</td>
+                    <td>{{ row['Accident Likelihood'] | float }}</td>
+                </tr>
+                {% endfor %}
+                <tr class="accordion-end">
+                    <td colspan="{{ 5 if area == 'Citywide' else 4 }}">End of Decile {{ decile }}</td>
+                </tr>
+            </tbody>
             {% endfor %}
-            <tr class="accordion-end">
-                <td colspan="{{ 4 if area == 'citywide' else 3 }}">End of Decile {{ decile }}</td>
-            </tr>
-        </tbody>
-        {% endfor %}
         </tbody>
     </table>
+
+    <!-- Include the external JavaScript file -->
+    <script src="{{ url_for('static', filename='scripts/accordion.js') }}"></script>
+
 </body>
 
 </html>

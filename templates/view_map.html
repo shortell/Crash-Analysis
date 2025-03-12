@@ -1,24 +1,38 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Heatmap for {{ area | capitalize }}</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='styles2.css') }}">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Heatmap for {{ area | capitalize }}</title>
+  <style>
+      /* Ensure the map div has a height and is contained within a box */
+      #map-container {
+          height: 600px;
+          width: 80%;
+          margin: 20px auto; /* Center the container and add some margin */
+          border: 1px solid #ccc; /* Optional: Add a border to the container */
+          box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* Optional: Add a shadow to the container */
+          overflow: hidden; /* Ensure the map does not overflow the container */
+      }
+      #map {
+          height: 100%;
+          width: 100%;
+      }
+  </style>
 </head>
-
 <body>
-
-    <h1>Interactive Heatmap for: {{ area.replace('_', ' ') | title }}</h1>
-    <div class="button-container">
-        <a href="{{ url_for('index') }}" class="back-button">Back to Selection</a>
-        <a href="{{ url_for('view_data', area=area) }}" class="center-button">View Table</a>
+  <h1>Interactive Heatmap for: {{ area.replace('_', ' ') | title }}</h1>
+  <div class="button-container">
+      <a href="{{ url_for('index') }}" class="back-button">Back to Selection</a>
+      <a href="{{ url_for('view_data', area=area) }}" class="center-button">View Table</a>
+  </div>
+  
+  <!-- Insert heatmap HTML directly -->
+  <div id="map-container">
+    <div id="map">
+      {{ heatmap_html|safe }}
     </div>
-    <iframe src="{{ url_for('static', filename=area + '/interactive_heatmap.html') }}" width="100%"
-        height="750px"></iframe>
-
-
+  </div>
+  
 </body>
-
 </html>
