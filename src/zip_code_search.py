@@ -1,4 +1,4 @@
-from main_pipeline import process_and_format_crash_data
+from src.main_pipeline import process_and_format_crash_data
 
 
 def get_all_unique_zip_codes(df):

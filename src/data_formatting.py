@@ -46,8 +46,7 @@ def create_crash_likelihood_column(df, average_crashes_per_zip):
     Create a new column 'Crash Likelihood' that calculates the likelihood of a crash in a zip code as a multiple of the average crashes per zip code.
     """
     df = df.copy()  # Create a copy to avoid SettingWithCopyWarning
-    df['crash_likelihood'] = (df['total_crashes'] /
-                              average_crashes_per_zip).round(2)
+    df['crash_likelihood'] = round((df['total_crashes'] / average_crashes_per_zip), 2)
     return df
 
 

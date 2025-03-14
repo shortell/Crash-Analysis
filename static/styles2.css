@@ -17,7 +17,7 @@ html {
 }
 
 /* Headings */
-h1, h2 {
+h1, h2, h3 {
     color: #2c3e50;
     text-align: center;
     margin-bottom: 20px;
@@ -163,5 +163,20 @@ tr:nth-child(odd) {
 
     table {
         width: 100%; /* Full width for small screens */
+    }
+
+    .download-form {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    
+    .download-form label {
+        margin: 0 5px;
+    }
+    
+    .download-form select,
+    .download-form button {
+        margin: 0 5px;
     }
 }
