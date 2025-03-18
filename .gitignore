@@ -1,5 +1,4 @@
-data/uploads/*
-data/heatmaps/*
+flask_session
 
 
 # Byte-compiled / optimized / DLL files

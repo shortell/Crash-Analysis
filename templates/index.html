@@ -10,7 +10,7 @@
 
 <body>
     <div class="container">
-        <h1 class="my-4">NYC Crash Analysis</h1>
+        <h1>NYC Crash Analysis</h1>
 
         <!-- Search Form with Autocomplete and Submit Button -->
         <form id="search-form" class="search-bar" action="/search" method="get">
@@ -19,61 +19,18 @@
             <div id="autocomplete-list" class="autocomplete-items"></div>
         </form>
 
-        <div class="button-container">
-            <a href="{{ url_for('view_data', area='citywide') }}" class="btn btn-primary">Citywide</a>
-            <a href="{{ url_for('view_data', area='the_bronx') }}" class="btn btn-primary">The Bronx</a>
-            <a href="{{ url_for('view_data', area='manhattan') }}" class="btn btn-primary">Manhattan</a>
-            <a href="{{ url_for('view_data', area='queens') }}" class="btn btn-primary">Queens</a>
-            <a href="{{ url_for('view_data', area='brooklyn') }}" class="btn btn-primary">Brooklyn</a>
-            <a href="{{ url_for('view_data', area='staten_island') }}" class="btn btn-primary">Staten Island</a>
+        <div class="selection-container">
+            <a href="{{ url_for('view_data', area='Citywide') }}" class="area-btn">Citywide</a>
+            <a href="{{ url_for('view_data', area='The Bronx') }}" class="area-btn">The Bronx</a>
+            <a href="{{ url_for('view_data', area='Manhattan') }}" class="area-btn">Manhattan</a>
+            <a href="{{ url_for('view_data', area='Queens') }}" class="area-btn">Queens</a>
+            <a href="{{ url_for('view_data', area='Brooklyn') }}" class="area-btn">Brooklyn</a>
+            <a href="{{ url_for('view_data', area='Staten Island') }}" class="area-btn">Staten Island</a>
         </div>
     </div>
 
     <!-- JavaScript for Autocomplete and Submit Handling -->
-    <script>
-        const searchInput = document.getElementById('zipcode-search');
-        const autocompleteList = document.getElementById('autocomplete-list');
-        
-        // Autocomplete functionality
-        searchInput.addEventListener('input', function () {
-            const query = this.value;
-            if (query.length > 2) { // Fetch suggestions if input has more than 2 characters
-                fetch(`/autocomplete_zipcode?query=${query}`)
-                    .then(response => response.json())
-                    .then(data => {
-                        autocompleteList.innerHTML = ''; // Clear any existing items
-
-                        data.forEach(zipcode => {
-                            const item = document.createElement('div');
-                            item.textContent = zipcode;
-                            item.addEventListener('click', function () {
-                                searchInput.value = zipcode;
-                                autocompleteList.innerHTML = ''; // Close the list after selection
-                            });
-                            autocompleteList.appendChild(item);
-                        });
-                    });
-            } else {
-                autocompleteList.innerHTML = ''; // Clear list if input is too short
-            }
-        });
-
-        // Close the autocomplete dropdown when clicking outside
-        document.addEventListener('click', function (event) {
-            if (!searchInput.contains(event.target) && !autocompleteList.contains(event.target)) {
-                autocompleteList.innerHTML = ''; // Close the list when clicking outside
-            }
-        });
-
-        // Handle form submission
-        document.getElementById('search-form').addEventListener('submit', function (event) {
-            const query = searchInput.value;
-            if (!query) {
-                event.preventDefault(); // Prevent submission if no zip code is entered
-                alert("Please enter a zip code to search.");
-            }
-        });
-    </script>
+    <script src="{{ url_for('static', filename='scripts/autocomplete.js') }}"></script>
 </body>
 
 </html>

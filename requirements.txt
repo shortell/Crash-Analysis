@@ -5,3 +5,6 @@ geopandas
 matplotlib
 folium
 gunicorn
+flask-session
+requests
+numpy
