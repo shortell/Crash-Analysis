@@ -8,6 +8,12 @@ def create_zip_to_borough_dict(df):
     Return a dictionary of zip code to borough mapping.
 
     If there are multiple boroughs for a zip code, the borough with the highest count is selected.
+
+    Parameters:
+    df (pd.DataFrame): The DataFrame to create the mapping from
+
+    Returns:
+    dict: A dictionary of zip codes to boroughs
     """
     zip_borough_counts = df.groupby(
         ["zip_code", "borough"]).size().reset_index(name='accident_count')
@@ -21,6 +27,13 @@ def update_boroughs(df, zip_to_borough_dict):
     """
     Fill in all NaN values and update any record where the DataFrame has a different answer than the dictionary.
     Logs changes made to the DataFrame.
+
+    Parameters:
+    df (pd.DataFrame): The DataFrame to update
+    zip_to_borough_dict (dict): The dictionary of zip codes to boroughs
+
+    Returns:
+    pd.DataFrame: The updated DataFrame
     """
     # Create a mapping series from the dictionary
     zip_to_borough = pd.Series(zip_to_borough_dict)
@@ -41,6 +54,14 @@ def update_boroughs(df, zip_to_borough_dict):
 def assign_zip_codes_kdtree(df_with_zip, df_without_zip, n_neighbors):
     """
     Assign zip codes using KD-Tree for faster nearest neighbor search.
+
+    Parameters:
+    df_with_zip (pd.DataFrame): DataFrame with zip codes
+    df_without_zip (pd.DataFrame): DataFrame without zip codes
+    n_neighbors (int): Number of neighbors to consider
+
+    Returns:
+    pd.DataFrame: DataFrame with zip codes filled in
     """
     X_train = df_with_zip[["latitude", "longitude"]].values
     y_train = df_with_zip["zip_code"].values
@@ -66,6 +87,17 @@ def create_combined_dataframe(df_zip_lat_long_borough,
                               df_no_zip_lat_long_no_borough):
     """
     Combine the accident DataFrames with known and predicted zip codes.
+
+    Parameters:
+    df_zip_lat_long_borough (pd.DataFrame): DataFrame with zip code, latitude, longitude, and borough
+    df_zip_lat_long_no_borough (pd.DataFrame): DataFrame with zip code, latitude, and longitude
+    df_zip_no_lat_long_borough (pd.DataFrame): DataFrame with zip code and borough
+    df_zip_no_lat_long_no_borough (pd.DataFrame): DataFrame with zip code
+    df_no_zip_lat_long_borough (pd.DataFrame): DataFrame with latitude, longitude, and borough
+    df_no_zip_lat_long_no_borough (pd.DataFrame): DataFrame with latitude and longitude
+
+    Returns:
+    pd.DataFrame: Combined DataFrame with all accident records
     """
     return pd.concat([
         df_zip_lat_long_borough,

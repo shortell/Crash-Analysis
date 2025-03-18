@@ -1,14 +1,30 @@
-from src.main_pipeline import process_and_format_crash_data
+from src.data_cleaning import process_and_format_crash_data
 
 
 def get_all_unique_zip_codes(df):
     """
     Get all unique zip codes from the citywide dataset.
+
+    Parameters:
+    df (pd.DataFrame): The DataFrame containing the citywide dataset
+
+    Returns:
+    pd.Series: A series containing all unique zip codes
     """
     return df['zip_code'].unique()
 
 
 def search_zip_code(df, zip_code):
+    """
+    Search for a zip code in the citywide dataset and return the rank, decile, accident likelihood, and accident count for the zip code.
+    
+    Parameters:
+    df (pd.DataFrame): The DataFrame containing the citywide dataset
+    zip_code (str): The zip code to search for
+    
+    Returns:
+    dict: A dictionary containing the citywide and borough records for the zip code
+    """
     _, _, citywide_df = process_and_format_crash_data(df)
     citywide_record = citywide_df[citywide_df['Zip Code'] == zip_code]
 

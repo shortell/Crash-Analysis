@@ -5,69 +5,71 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Zip Code Search Results</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='styles2.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
 </head>
 
 <body>
-    <div class="container">
+    <div>
         <h1>Zip Code Search Results</h1>
-        
+
         <h2>Zip Code: {{ zip_code }}</h2>
 
         {% if error %}
-            <p>{{ error }}</p>
+        <p>{{ error }}</p>
         {% else %}
-            <!-- Accident Count -->
-            <h2>Accident Count: {{ citywide_record.accident_count }}</h2>
+        <!-- Accident Count -->
+        <h2>Accident Count: {{ citywide_record.accident_count }}</h2>
 
-            <!-- Citywide Record Table -->
-            <section>
-                <h3>Citywide Record</h3>
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Rank</th>
-                            <th>Decile</th>
-                            <th>Accident Likelihood</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td>{{ citywide_record.rank }} / {{ citywide_record.highest_rank }}</td>
-                            <td>{{ citywide_record.decile }}</td>
-                            <td>{{ citywide_record.accident_likelihood }}</td>
-                        </tr>
-                    </tbody>
-                </table>
-            </section>
+        <a href="{{ url_for('index') }}" class="back-button">Back to Selection</a>
 
-            <!-- Borough Record Table -->
-            {% if borough_record %}
-            <section>
-                <h3>{{ borough_name | title }} Record</h3>
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Rank</th>
-                            <th>Decile</th>
-                            <th>Accident Likelihood</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td>{{ borough_record.rank }} / {{ borough_highest_rank }}</td>
-                            <td>{{ borough_record.decile }}</td>
-                            <td>{{ borough_record.accident_likelihood }}</td>
-                        </tr>
-                    </tbody>
-                </table>
-            </section>
-            {% endif %}
+
+        <!-- Citywide Record Table -->
+        <section>
+            <h3>Citywide Record</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Rank</th>
+                        <th>Decile</th>
+                        <th>Accident Likelihood</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>{{ citywide_record.rank }} / {{ citywide_record.highest_rank }}</td>
+                        <td>{{ citywide_record.decile }}</td>
+                        <td>{{ citywide_record.accident_likelihood }}</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <!-- Borough Record Table -->
+        {% if borough_record %}
+        <section>
+            <h3>{{ borough_name | title }} Record</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Rank</th>
+                        <th>Decile</th>
+                        <th>Accident Likelihood</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>{{ borough_record.rank }} / {{ borough_highest_rank }}</td>
+                        <td>{{ borough_record.decile }}</td>
+                        <td>{{ borough_record.accident_likelihood }}</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+        {% endif %}
         {% endif %}
 
         <!-- Back to Search Link -->
         <div class="navigation-links">
-            <a href="{{ url_for('index') }}" class="back-button">Back to Search</a>
         </div>
     </div>
 </body>

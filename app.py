@@ -1,13 +1,14 @@
 from io import StringIO
-import datetime
 
 import pandas as pd
 from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, session
 from flask_session import Session
-from src.main_pipeline import fetch_and_aggregate_crash_data, process_and_format_crash_data
+
+from src.data_cleaning import fetch_and_aggregate_crash_data, process_and_format_crash_data
 from src.zip_code_search import get_all_unique_zip_codes, search_zip_code
 from src.heatmap_generation import create_interactive_heatmap
 from src.data_fetching import is_date_range_valid, get_valid_years, get_current_month, get_current_year
+from src.data_storage import delete_all_files_in_data_dir, create_file_name, fetch_csv_file, save_dataframe_to_csv
 
 app = Flask(__name__)
 app.secret_key = 'supersecretkey'
@@ -34,8 +35,6 @@ INT_TO_MONTH = {
     12: "December"
 }
 
-MONTH_TO_INT = {v: k for k, v in INT_TO_MONTH.items()}
-
 
 def get_session_cached_raw_data():
     return pd.read_json(StringIO(session['cached_raw_data']))
@@ -59,7 +58,6 @@ def get_session_date_range():
 
 
 def set_session_date_range(start_month, start_year, end_month, end_year):
-    print(f"Setting session date range: {start_month}, {start_year}, {end_month}, {end_year}")
     session['start_month'] = start_month
     session['start_year'] = start_year
     session['end_month'] = end_month
@@ -67,7 +65,6 @@ def set_session_date_range(start_month, start_year, end_month, end_year):
 
 
 def set_session_cached_raw_data(agg_df):
-    print(f"Length of agg_df: {len(agg_df)}")
     session['cached_raw_data'] = agg_df.to_json()
 
 
@@ -78,34 +75,47 @@ def set_session_cached_formatted_data(formatted_df_by_area, total_crashes, avera
 
 
 def set_session_area(area):
-    print(f"Setting session area: {area}")
     session['area'] = area
 
 
-def get_default_start_end_dates():
-    """Get the default start and end dates for the dataset."""
-    start_month = get_current_month()
-    start_year = get_current_year()
-    end_month = get_current_month()
-    end_year = get_current_year()
+def get_latest_month_year():
+    current_month = get_current_month()
+    current_year = get_current_year()
 
-    return start_month, start_year, end_month, end_year
+    if current_month == 1:
+        current_month = 12
+        current_year = current_year - 1
+
+    else:
+        current_month = current_month - 1
+
+    return current_month, current_year
 
 
-def download_default_data():
-    start_month, start_year, end_month, end_year = get_default_start_end_dates()
-    agg_df = fetch_and_aggregate_crash_data(
-        start_month, start_year, end_month, end_year, K)
-    if agg_df is not None:
-        set_session_cached_raw_data(agg_df)
-        set_session_date_range(start_month, start_year, end_month, end_year)
+def get_default_data():
+    start_month, start_year = get_latest_month_year()
+    end_month, end_year = get_latest_month_year()
+
+    filename = create_file_name(
+        start_month, start_year, end_month, end_year)
+
+    agg_df = fetch_csv_file(filename)
+    if agg_df is None:
+        agg_df = fetch_and_aggregate_crash_data(
+            start_month, start_year, end_month, end_year, K)
+        if agg_df is not None:
+            delete_all_files_in_data_dir()
+            save_dataframe_to_csv(agg_df, filename)
+
+    set_session_cached_raw_data(agg_df)
+    set_session_date_range(start_month, start_year, end_month, end_year)
 
 
 @app.route('/')
 def index():
     """ Display the available boroughs and datasets. """
     if 'cached_raw_data' not in session:
-        download_default_data()
+        get_default_data()
     return render_template('index.html')
 
 
@@ -116,7 +126,7 @@ def view_data(area):
     """
 
     if 'cached_raw_data' not in session:
-        download_default_data()
+        get_default_data()
     cached_raw_data = get_session_cached_raw_data()
     total_crashes, average_crashes_per_zip, formatted_df_by_area = process_and_format_crash_data(
         cached_raw_data, area)
@@ -127,62 +137,24 @@ def view_data(area):
 
     # Ensure the session date range is set
     if 'start_month' not in session or 'start_year' not in session or 'end_month' not in session or 'end_year' not in session:
-        start_month, start_year, end_month, end_year = get_default_start_end_dates()
+        start_month, start_year = get_latest_month_year()
+        end_month, end_year = get_latest_month_year()
         set_session_date_range(start_month, start_year, end_month, end_year)
     else:
         start_month, start_year, end_month, end_year = get_session_date_range()
 
     return render_template(
-        'view_area copy.html',
+        'view_area.html',
         area=area,
         total_accidents=total_crashes,
         average_accidents_per_zip=average_crashes_per_zip,
         decile_table=formatted_df_by_area,
         years=get_valid_years(),
-        start_month=start_month,
         start_year=start_year,
-        end_month=end_month,
         end_year=end_year,
         start_month_name=INT_TO_MONTH[int(start_month)],
         end_month_name=INT_TO_MONTH[int(end_month)]
     )
-
-# @app.route('/view/<area>')
-# def view_data(area):
-#     """
-#     Display the selected area (borough or citywide) and dataset.
-#     """
-
-#     if 'cached_raw_data' not in session:
-#         download_default_data()
-#     cached_raw_data = get_session_cached_raw_data()
-#     total_crashes, average_crashes_per_zip, formatted_df_by_area = process_and_format_crash_data(
-#         cached_raw_data, area)
-
-#     set_session_area(area)
-#     set_session_cached_formatted_data(formatted_df_by_area, total_crashes, average_crashes_per_zip)
-#     start_month, start_year, end_month, end_year = get_session_date_range()
-#     return render_template(
-#         'view_area copy.html',
-#         area=area,
-#         total_accidents=total_crashes,
-#         average_accidents_per_zip=average_crashes_per_zip,
-#         decile_table=formatted_df_by_area,
-#         years=get_valid_years(),
-#         start_month=start_month,
-#         start_year=start_year,
-#         end_month=end_month,
-#         end_year=end_year
-#     )
-    # return render_template(
-    #     'view_area copy.html',
-    #     area=area,
-    #     total_accidents=total_crashes,
-    #     average_accidents_per_zip=average_crashes_per_zip,
-    #     decile_table=formatted_df_by_area,
-    #     years=get_valid_years(),
-
-    # )
 
 
 @app.route('/download', methods=['POST'])
@@ -191,8 +163,6 @@ def download_crash_data():
     start_year = request.form.get('start_year')
     end_month = request.form.get('end_month')
     end_year = request.form.get('end_year')
-
-    print(f"Download request: {start_month}, {start_year}, {end_month}, {end_year}")
 
     area = get_session_area()
     agg_df = get_session_cached_raw_data()
@@ -206,15 +176,13 @@ def download_crash_data():
             formatted_df_by_area, total_crashes, average_crashes_per_zip)
         set_session_date_range(start_month, start_year, end_month, end_year)
         return render_template(
-            'view_area copy.html',
+            'view_area.html',
             area=area,
             total_accidents=total_crashes,
             average_accidents_per_zip=average_crashes_per_zip,
             decile_table=formatted_df_by_area,
             years=get_valid_years(),
-            start_month=start_month,
             start_year=start_year,
-            end_month=end_month,
             end_year=end_year,
             start_month_name=INT_TO_MONTH[int(start_month)],
             end_month_name=INT_TO_MONTH[int(end_month)]
@@ -223,7 +191,7 @@ def download_crash_data():
         start_month, start_year, end_month, end_year = get_session_date_range()
         total_crashes, average_crashes_per_zip, formatted_df_by_area = get_session_cached_formatted_data()
         return render_template(
-            'view_area copy.html',
+            'view_area.html',
             area=area,
             total_accidents=total_crashes,
             average_accidents_per_zip=average_crashes_per_zip,
@@ -268,7 +236,7 @@ def view_map(area):
 @app.route('/autocomplete_zipcode')
 def autocomplete_zipcode():
     if 'cached_raw_data' not in session:
-        download_default_data()
+        get_default_data()
     cached_raw_data = get_session_cached_raw_data()
     query = request.args.get('query', '')
     zipcodes = get_all_unique_zip_codes(
@@ -281,7 +249,7 @@ def autocomplete_zipcode():
 @app.route('/search', methods=['GET'])
 def search_zip():
     if 'cached_raw_data' not in session:
-        download_default_data()
+        get_default_data()
     cached_raw_data = get_session_cached_raw_data()
     # Check if `zipcode` parameter is provided in the request
     zip_code = request.args.get('zipcode')

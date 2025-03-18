@@ -16,7 +16,30 @@ NYC Crash Analysis is a web application designed to provide in-depth insights in
 
 ## Target Audience
 
-The primary users of this tool are **injury attorney firms** who are looking for insights into crash trends across different neighborhoods. This data can help firms identify ideal locations for running ads or setting up new office locations based on crash frequency and severity.
+1. Injury Attorney Firms
+Identify high-crash areas to optimize ad placement and office locations.
+Use crash severity data to focus on cases with higher legal value.
+Gain a competitive edge by understanding trends in accident frequency.
+
+2. Urban Planners & City Officials
+Departments of Transportation (DOT): Improve road safety through data-driven policy decisions.
+City Planners: Plan safer intersections, bike lanes, and pedestrian zones.
+Vision Zero & Safety Advocacy Groups: Support initiatives aimed at reducing traffic fatalities.
+
+3. Insurance Companies
+Underwriters & Actuaries: Adjust auto insurance risk models based on accident trends.
+Claims Analysts: Verify crash reports and detect potential fraud.
+
+4. Rideshare & Delivery Companies
+Uber, Lyft, DoorDash, etc.: Identify high-risk areas to enhance driver safety and optimize routes.
+
+5. Journalists & Researchers
+Investigative Reporters: Analyze accident patterns for public safety reporting.
+Academics & Data Scientists: Study urban mobility and accident correlations with infrastructure.
+
+6. Real Estate Developers & Property Managers
+Commercial Developers: Assess traffic safety near business locations.
+Residential Real Estate Agents: Provide safety insights to homebuyers
 
 
 ## Technical Stack

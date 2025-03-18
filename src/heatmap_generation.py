@@ -58,9 +58,12 @@ def create_interactive_heatmap(borough: str, decile_table, shapefile_path=SHAPEF
                 icon=None,
                 tooltip=tooltip_text
             ).add_to(m)
-
+        print("Interactive heatmap created.")
         return m
 
     except Exception as e:
         print(f"An error occurred in create_interactive_heatmap: {e}")
         return None
+    
+
+

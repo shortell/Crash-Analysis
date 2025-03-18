@@ -20,6 +20,12 @@ def get_zip_lat_long_borough(df):  # no filling needed
     """
     Returns records where zip_code, latitude, longitude, and borough are all present.
     Zip code (present), Lat/Long (present), Borough (present)
+
+    Parameters:
+    df (pd.DataFrame): The dataframe to split
+
+    Returns:
+    pd.DataFrame: The dataframe with zip code, latitude, longitude, and borough all present
     """
     return df[df["zip_code"].notna() & df["latitude"].notna() & df["longitude"].notna() & df["borough"].notna()]
 
@@ -28,6 +34,12 @@ def get_zip_lat_long_no_borough(df):  # can fill borough with zip code
     """
     Returns records where zip_code, latitude, and longitude are present, but borough is missing.
     Zip code (present), Lat/Long (present), Borough (missing)
+
+    Parameters:
+    df (pd.DataFrame): The dataframe to split
+
+    Returns:
+    pd.DataFrame: The dataframe with zip code, latitude, and longitude present, but borough missing
     """
     return df[df["zip_code"].notna() & df["latitude"].notna() & df["longitude"].notna() & df["borough"].isna()]
 
@@ -36,6 +48,12 @@ def get_zip_no_lat_long_borough(df):  # no filling needed
     """
     Returns records where zip_code is present, latitude and longitude are missing, and borough is present.
     Zip code (present), Lat/Long (missing), Borough (present)
+
+    Parameters:
+    df (pd.DataFrame): The dataframe to split
+
+    Returns:
+    pd.DataFrame: The dataframe with zip code present, latitude and longitude missing, and borough present
     """
     return df[df["zip_code"].notna() & df["latitude"].isna() & df["longitude"].isna() & df["borough"].notna()]
 
@@ -45,6 +63,12 @@ def get_zip_no_lat_long_no_borough(df):
     """
     Returns records where zip_code is present, latitude and longitude are missing, and borough is missing.
     Zip code (present), Lat/Long (missing), Borough (missing)
+
+    Parameters:
+    df (pd.DataFrame): The dataframe to split
+
+    Returns:
+    pd.DataFrame: The dataframe with zip code present, latitude and longitude missing, and borough missing
     """
     return df[df["zip_code"].notna() & df["latitude"].isna() & df["longitude"].isna() & df["borough"].isna()]
 
@@ -53,6 +77,12 @@ def get_no_zip_lat_long_borough(df):  # lat/long can determine zip code
     """
     Returns records where zip_code is missing, latitude and longitude are present, and borough is present.
     Zip code (missing), Lat/Long (present), Borough (present)
+
+    Parameters:
+    df (pd.DataFrame): The dataframe to split
+
+    Returns:
+    pd.DataFrame: The dataframe with zip code missing, latitude and longitude present, and borough present
     """
     return df[df["zip_code"].isna() & df["latitude"].notna() & df["longitude"].notna() & df["borough"].notna()]
 
@@ -62,6 +92,12 @@ def get_no_zip_lat_long_no_borough(df):
     """
     Returns records where zip_code is missing, latitude and longitude are present, and borough is missing.
     Zip code (missing), Lat/Long (present), Borough (missing)
+
+    Parameters:
+    df (pd.DataFrame): The dataframe to split
+
+    Returns:
+    pd.DataFrame: The dataframe with zip code missing, latitude and longitude present, and borough missing
     """
     return df[df["zip_code"].isna() & df["latitude"].notna() & df["longitude"].notna() & df["borough"].isna()]
 
@@ -71,6 +107,12 @@ def get_no_zip_no_lat_long_borough(df):
     """
     Returns records where zip_code and latitude/longitude are missing, and borough is present.
     Zip code (missing), Lat/Long (missing), Borough (present)
+
+    Parameters:
+    df (pd.DataFrame): The dataframe to split
+
+    Returns:
+    pd.DataFrame: The dataframe with zip code and latitude/longitude missing, and borough present
     """
     return df[df["zip_code"].isna() & df["latitude"].isna() & df["longitude"].isna() & df["borough"].notna()]
 
@@ -79,9 +121,24 @@ def get_no_zip_no_lat_long_no_borough(df):  # can not be filled
     """
     Returns records where zip_code and latitude/longitude are missing, and borough is missing.
     Zip code (missing), Lat/Long (missing), Borough (missing)
+
+    Parameters:
+    df (pd.DataFrame): The dataframe to split
+
+    Returns:
+    pd.DataFrame: The dataframe with zip code and latitude/longitude missing, and borough missing
     """
     return df[df["zip_code"].isna() & df["latitude"].isna() & df["longitude"].isna() & df["borough"].isna()]
 
 
 def get_null_crash_count(df):  # usually has 0 records
+    """
+    Returns records where crash_count is missing.
+    
+    Parameters:
+    df (pd.DataFrame): The dataframe to split
+    
+    Returns:
+    pd.DataFrame: The dataframe with crash_count missing
+    """
     return df[df["crash_count"].isna()]

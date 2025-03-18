@@ -10,7 +10,7 @@
 
 <body>
     <div class="container">
-        <h1 class="my-4">NYC Crash Analysis</h1>
+        <h1>NYC Crash Analysis</h1>
 
         <!-- Search Form with Autocomplete and Submit Button -->
         <form id="search-form" class="search-bar" action="/search" method="get">
@@ -19,13 +19,13 @@
             <div id="autocomplete-list" class="autocomplete-items"></div>
         </form>
 
-        <div class="button-container">
-            <a href="{{ url_for('view_data', area='Citywide') }}" class="btn btn-primary">Citywide</a>
-            <a href="{{ url_for('view_data', area='The Bronx') }}" class="btn btn-primary">The Bronx</a>
-            <a href="{{ url_for('view_data', area='Manhattan') }}" class="btn btn-primary">Manhattan</a>
-            <a href="{{ url_for('view_data', area='Queens') }}" class="btn btn-primary">Queens</a>
-            <a href="{{ url_for('view_data', area='Brooklyn') }}" class="btn btn-primary">Brooklyn</a>
-            <a href="{{ url_for('view_data', area='Staten Island') }}" class="btn btn-primary">Staten Island</a>
+        <div class="selection-container">
+            <a href="{{ url_for('view_data', area='Citywide') }}" class="area-btn">Citywide</a>
+            <a href="{{ url_for('view_data', area='The Bronx') }}" class="area-btn">The Bronx</a>
+            <a href="{{ url_for('view_data', area='Manhattan') }}" class="area-btn">Manhattan</a>
+            <a href="{{ url_for('view_data', area='Queens') }}" class="area-btn">Queens</a>
+            <a href="{{ url_for('view_data', area='Brooklyn') }}" class="area-btn">Brooklyn</a>
+            <a href="{{ url_for('view_data', area='Staten Island') }}" class="area-btn">Staten Island</a>
         </div>
     </div>
 

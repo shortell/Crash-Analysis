@@ -4,78 +4,139 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>View Data for {{ area | capitalize }}</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='styles2.css') }}">
+    <title>View Data for {{ area }}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
 
 </head>
 
 <body>
     <h1>Accident Data for: {{ area }}</h1>
+    <h2>Data From: {{ start_month_name }} {{ start_year }} - {{ end_month_name }} {{ end_year }}</h2>
 
     <h2>Total Accidents: {{ total_accidents }}</h2>
     <h2>Average Accidents per Zip Code: {{ average_accidents_per_zip }}</h2>
 
-    <div class="button-container">
-        <a href="{{ url_for('index') }}" class="back-button">Back to Selection</a>
+    <div class="horizontal-container">
+        <a href="{{ url_for('index') }}" class="back-link no-wrap">Back to Selection</a>
+    
+        <div class="form-container">
+            <form action="{{ url_for('download_crash_data') }}" method="post" class="form-horizontal">
+                <div class="form-group">
+                    <label for="start-month">Start Month:</label>
+                    <select id="start-month" name="start_month" class="styled-select">
+                        <option value="1">January</option>
+                        <option value="2">February</option>
+                        <option value="3">March</option>
+                        <option value="4">April</option>
+                        <option value="5">May</option>
+                        <option value="6">June</option>
+                        <option value="7">July</option>
+                        <option value="8">August</option>
+                        <option value="9">September</option>
+                        <option value="10">October</option>
+                        <option value="11">November</option>
+                        <option value="12">December</option>
+                    </select>
+                </div>
+    
+                <div class="form-group">
+                    <label for="start-year">Start Year:</label>
+                    <select id="start-year" name="start_year" class="styled-select">
+                        {% for year in years %}
+                        <option value="{{ year }}" {% if start_year==year|string %}selected{% endif %}>{{ year }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+    
+                <div class="form-group">
+                    <label for="end-month">End Month:</label>
+                    <select id="end-month" name="end_month" class="styled-select">
+                        <option value="1">January</option>
+                        <option value="2">February</option>
+                        <option value="3">March</option>
+                        <option value="4">April</option>
+                        <option value="5">May</option>
+                        <option value="6">June</option>
+                        <option value="7">July</option>
+                        <option value="8">August</option>
+                        <option value="9">September</option>
+                        <option value="10">October</option>
+                        <option value="11">November</option>
+                        <option value="12">December</option>
+                    </select>
+                </div>
+    
+                <div class="form-group">
+                    <label for="end-year">End Year:</label>
+                    <select id="end-year" name="end_year" class="styled-select">
+                        {% for year in years %}
+                        <option value="{{ year }}" {% if end_year==year|string %}selected{% endif %}>{{ year }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </form>
+    
+            <a href="#" onclick="document.querySelector('.form-horizontal').submit();" class="styled-link">Update</a>
+        </div>
+    
         <a href="{{ url_for('view_map', area=area) }}" class="right-button">View Heatmap</a>
-
-
     </div>
 
     <table border="1" class="accordion-table">
-
-
         <thead>
             <tr class="accordion-header">
                 <th>Decile</th>
                 <th>Total Accidents in Decile</th>
                 <th>Percentage of Total Accidents</th>
                 {% if area == 'Citywide' %}
-                <th class="extra-col" style="display: none;" >&nbsp;</th>
+                <th class="extra-col" style="display: none;">&nbsp;</th>
                 {% endif %}
                 <th>Action</th>
             </tr>
         </thead>
         <tbody>
-            {% for decile, group in decile_table.groupby('Decile', sort=False) | sort(attribute='Decile', reverse=True) %}
+            {% for decile, group in decile_table.groupby('Decile', sort=False) | sort(attribute='Decile', reverse=True)
+            %}
             <tr class="accordion-header">
                 <td>{{ decile | int }}</td>
                 <td>{{ group['Accident Count'].sum() | int }}</td>
                 <td>{{ (group['Accident Count'].sum() / total_accidents * 100) | round(2) }}%</td>
                 {% if area == 'Citywide' %}
-                <td class="extra-col" style="display: none;" >&nbsp;</td>  <!-- Extra cell to match the child row columns -->
+                <td class="extra-col" style="display: none;">&nbsp;</td>
+                <!-- Extra cell to match the child row columns -->
                 {% endif %}
                 <td>
-                    <button id="button-content-{{ decile }}" class="expand-button" onclick="toggleAccordion('content-{{ decile }}')">Expand</button>
+                    <button id="button-content-{{ decile }}" class="expand-button"
+                        onclick="toggleAccordion('content-{{ decile }}')">Expand</button>
                 </td>
             </tr>
-        
-            <tbody id="content-{{ decile }}" class="accordion-content">
-                <tr class="accordion-content-header">
-                    <th>Rank</th>
-                    <th>Zip Code</th>
-                    {% if area == 'Citywide' %}
-                    <th>Borough</th>
-                    {% endif %}
-                    <th>Accident Count</th>
-                    <th>Accident Likelihood</th>
-                </tr>
-                {% for index, row in group.iterrows() %}
-                <tr class="accordion-content-row">
-                    <td>{{ row['Rank'] | int}}</td>
-                    <td>{{ row['Zip Code'] | int }}</td>
-                    {% if area == 'Citywide' %}
-                    <td>{{ row['Borough'] }}</td>
-                    {% endif %}
-                    <td>{{ row['Accident Count'] | int }}</td>
-                    <td>{{ row['Accident Likelihood'] | float }}</td>
-                </tr>
-                {% endfor %}
-                <tr class="accordion-end">
-                    <td colspan="{{ 5 if area == 'Citywide' else 4 }}">End of Decile {{ decile }}</td>
-                </tr>
-            </tbody>
+
+        <tbody id="content-{{ decile }}" class="accordion-content">
+            <tr class="accordion-content-header">
+                <th>Rank</th>
+                <th>Zip Code</th>
+                {% if area == 'Citywide' %}
+                <th>Borough</th>
+                {% endif %}
+                <th>Accident Count</th>
+                <th>Accident Likelihood</th>
+            </tr>
+            {% for index, row in group.iterrows() %}
+            <tr class="accordion-content-row">
+                <td>{{ row['Rank'] | int}}</td>
+                <td>{{ row['Zip Code'] | int }}</td>
+                {% if area == 'Citywide' %}
+                <td>{{ row['Borough'] }}</td>
+                {% endif %}
+                <td>{{ row['Accident Count'] | int }}</td>
+                <td>{{ row['Accident Likelihood'] | float | round(2) }}</td>
+            </tr>
             {% endfor %}
+            <tr class="accordion-end">
+                <td colspan="{{ 5 if area == 'Citywide' else 4 }}">End of Decile {{ decile }}</td>
+            </tr>
+        </tbody>
+        {% endfor %}
         </tbody>
     </table>
 
