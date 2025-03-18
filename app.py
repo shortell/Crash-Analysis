@@ -1,4 +1,5 @@
 from io import StringIO
+import os
 
 import pandas as pd
 from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, session
@@ -11,7 +12,7 @@ from src.data_fetching import is_date_range_valid, get_valid_years, get_current_
 from src.data_storage import delete_all_files_in_data_dir, create_file_name, fetch_csv_file, save_dataframe_to_csv
 
 app = Flask(__name__)
-app.secret_key = 'supersecretkey'
+app.secret_key = os.getenv("SECRET_KEY", "fallbackkey")
 
 # Configure Flask-Session
 # You can use 'redis' for Redis-based sessions
@@ -299,4 +300,4 @@ def search_zip():
 
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
