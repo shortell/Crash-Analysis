@@ -2,3 +2,10 @@ Create tests for testable functions
 
 Create more documentation for /docs
 
+Optimize memory overhead 
+
+Possibly optimize step 4 of KDTree
+
+Possibly swap out data fetching function to fetch directly from 
+NYC Open data instead of crash mapper
+

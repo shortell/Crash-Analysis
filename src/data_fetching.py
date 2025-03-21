@@ -90,6 +90,36 @@ def is_date_range_valid(start_month, start_year, end_month, end_year):
     return False
 
 
+# def fetch_crash_data(start_month, start_year, end_month, end_year):
+#     """
+#     Fetch crash data from the API for a given date range.
+#     :param start_month: Start month (1-12)
+#     :param start_year: Start year (YYYY)
+#     :param end_month: End month (1-12)
+#     :param end_year: End year (YYYY)
+#     :return: List of crash records
+#     """
+#     url = ("https://chekpeds.carto.com/api/v2/sql?q="
+#            "SELECT c.zip_code, c.borough, c.crash_count, c.latitude, c.longitude "
+#            "FROM crashes_all_prod c "
+#            f"WHERE (year::text || LPAD(month::text, 2, '0') >= '{start_year}{str(start_month).zfill(2)}' "
+#            f"AND year::text || LPAD(month::text, 2, '0') <= '{end_year}{str(end_month).zfill(2)}')")
+
+#     start = time.perf_counter()
+#     response = requests.get(url)
+#     end = time.perf_counter()
+#     print(f"Data fetching took {end - start:0.4f} seconds")
+#     if response.status_code == 200:
+#         data = response.json().get('rows', [])
+#         if data == []:
+#             return None
+#         for i, record in enumerate(data):
+#             record['id'] = i  # Assign incremental ID starting from 0
+#         return data
+#     else:
+#         print(f"Failed to fetch data. Status code: {response.status_code}")
+#         return None
+
 def fetch_crash_data(start_month, start_year, end_month, end_year):
     """
     Fetch crash data from the API for a given date range.
@@ -99,20 +129,33 @@ def fetch_crash_data(start_month, start_year, end_month, end_year):
     :param end_year: End year (YYYY)
     :return: List of crash records
     """
-    url = ("https://chekpeds.carto.com/api/v2/sql?q="
-           "SELECT c.zip_code, c.borough, c.crash_count, c.latitude, c.longitude "
-           "FROM crashes_all_prod c "
-           f"WHERE (year::text || LPAD(month::text, 2, '0') >= '{start_year}{str(start_month).zfill(2)}' "
-           f"AND year::text || LPAD(month::text, 2, '0') <= '{end_year}{str(end_month).zfill(2)}')")
+    # Construct the API URL
+    start_date = f"{start_year}{str(start_month).zfill(2)}"
+    end_date = f"{end_year}{str(end_month).zfill(2)}"
+    url = (
+        "https://chekpeds.carto.com/api/v2/sql?q="
+        "SELECT c.zip_code, c.borough, c.crash_count, c.latitude, c.longitude "
+        "FROM crashes_all_prod c "
+        f"WHERE (year::text || LPAD(month::text, 2, '0') >= '{start_date}' "
+        f"AND year::text || LPAD(month::text, 2, '0') <= '{end_date}')"
+    )
 
-    response = requests.get(url)
-    if response.status_code == 200:
+    try:
+        # Measure the time taken for the request
+        response = requests.get(url, timeout=10)  # Add a timeout to prevent hanging
+
+        # Check for successful response
+        response.raise_for_status()
         data = response.json().get('rows', [])
-        if data == []:
-            return None
-        for i, record in enumerate(data):
-            record['id'] = i  # Assign incremental ID starting from 0
-        return data
-    else:
-        print(f"Failed to fetch data. Status code: {response.status_code}")
-        return None
+
+        # Return an empty list if no data is found
+        if not data:
+            print("No data found for the given date range.")
+            return []
+
+        # Add incremental IDs to each record
+        return [{'id': i, **record} for i, record in enumerate(data)]
+
+    except requests.exceptions.RequestException as e:
+        print(f"Error fetching data: {e}")
+        return []

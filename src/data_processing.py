@@ -1,3 +1,4 @@
+import time
 import pandas as pd
 import numpy as np
 from sklearn.neighbors import KDTree
@@ -38,15 +39,14 @@ def update_boroughs(df, zip_to_borough_dict):
     # Create a mapping series from the dictionary
     zip_to_borough = pd.Series(zip_to_borough_dict)
 
-    # Iterate over each row in the DataFrame
-    for idx, row in df.iterrows():
-        zip_code = row['zip_code']
-        current_borough = row['borough']
-        mapped_borough = zip_to_borough.get(zip_code, None)
+    # Map the zip codes to boroughs using the dictionary
+    mapped_boroughs = df['zip_code'].map(zip_to_borough)
 
-        # Check if the borough is NaN or does not match the mapping
-        if pd.isna(current_borough) or current_borough != mapped_borough:
-            df.at[idx, 'borough'] = mapped_borough
+    # Update boroughs where they are NaN or do not match the mapped borough
+    df['borough'] = df['borough'].where(
+        ~df['borough'].isna() & (df['borough'] == mapped_boroughs),
+        mapped_boroughs
+    )
 
     return df
 
@@ -63,18 +63,40 @@ def assign_zip_codes_kdtree(df_with_zip, df_without_zip, n_neighbors):
     Returns:
     pd.DataFrame: DataFrame with zip codes filled in
     """
+    start_time = time.perf_counter()
+
+    # Step 1: Extract training and testing data
+    step1_start = time.perf_counter()
     X_train = df_with_zip[["latitude", "longitude"]].values
     y_train = df_with_zip["zip_code"].values
     X_test = df_without_zip[["latitude", "longitude"]].values
+    step1_end = time.perf_counter()
+    print(f"Step 1 (Data extraction): {step1_end - step1_start:.6f} seconds")
 
-    # KD-Tree with Euclidean distance
+    # Step 2: Build KD-Tree
+    step2_start = time.perf_counter()
     tree = KDTree(X_train, metric="euclidean")
-    distances, indices = tree.query(X_test, k=n_neighbors)
+    step2_end = time.perf_counter()
+    print(f"Step 2 (KD-Tree construction): {step2_end - step2_start:.6f} seconds")
 
-    # Assign the most common zip code among neighbors
+    # Step 3: Query KD-Tree for nearest neighbors
+    step3_start = time.perf_counter()
+    _, indices = tree.query(X_test, k=n_neighbors)
+    step3_end = time.perf_counter()
+    print(f"Step 3 (KD-Tree query): {step3_end - step3_start:.6f} seconds")
+
+    # Step 4: Assign the most common zip code among neighbors
+    step4_start = time.perf_counter()
     nearest_zips = y_train[indices]
-    df_without_zip.loc[:, "zip_code"] = [
-        np.bincount(zips).argmax() for zips in nearest_zips]
+    most_common_zips = np.apply_along_axis(
+        lambda zips: np.bincount(zips).argmax(), axis=1, arr=nearest_zips
+    )
+    df_without_zip.loc[:, "zip_code"] = most_common_zips
+    step4_end = time.perf_counter()
+    print(f"Step 4 (Assign zip codes): {step4_end - step4_start:.6f} seconds")
+
+    end_time = time.perf_counter()
+    print(f"Total time: {end_time - start_time:.6f} seconds")
 
     return df_without_zip
 

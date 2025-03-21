@@ -2,7 +2,6 @@ pandas
 scikit-learn
 flask
 geopandas
-matplotlib
 folium
 gunicorn
 flask-session
