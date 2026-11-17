@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Stats tests</title>
+  <style>
+    body { font: 14px/1.5 system-ui, sans-serif; margin: 24px; background: #fcfcfb; color: #0b0b0b; }
+    .ok { color: #006300; } .fail { color: #d03b3b; }
+    li { margin: 4px 0; }
+  </style>
+</head>
+<body>
+  <h1>stats.js / geo.js tests</h1>
+  <p id="summary">Running…</p>
+  <ul id="out"></ul>
+  <script type="module">
+    import { runTests } from './stats.test.js';
+    const geojson = await fetch('../data/nyc_zips.geojson').then((r) => r.json());
+    const results = await runTests(geojson);
+    document.getElementById('out').innerHTML = results.map((r) =>
+      `<li class="${r.ok ? 'ok' : 'fail'}">${r.ok ? '✓' : '✗'} ${r.name}${r.ok ? '' : ` — ${r.error}`}</li>`).join('');
+    const failed = results.filter((r) => !r.ok).length;
+    document.getElementById('summary').textContent = `${results.length - failed}/${results.length} passed`;
+  </script>
+</body>
+</html>

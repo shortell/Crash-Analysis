@@ -1,48 +1,72 @@
 # NYC Crash Analysis
 
+A live dashboard of New York City motor vehicle crashes by zip code: where they happen, how severe they are, when they happen, and what causes them. It's built for **injury law firms** deciding where to advertise or open offices, but anyone can use it.
 
-## Goal
-NYC Crash Analysis is a web application designed to provide in-depth insights into crash data in New York City. The platform allows users to download publicly available crash data from [CrashMapper](https://crashmapper.org), process the data by filling in missing records, and perform basic statistical analysis. The results are presented in a table format and visualized through a zip code-based heatmap. This feature offers a more comprehensive view than the original website, which does not provide table views or heatmap visualization.
+It is a static site with no server and no database. The browser queries [NYC Open Data](https://data.cityofnewyork.us/Public-Safety/Motor-Vehicle-Collisions-Crashes/h9gi-nx95) directly, so the numbers are always current, and hosting costs nothing.
 
+## Features
 
-## Core Features
+- **Live data**: every view is queried from the NYPD collisions dataset, which is updated daily.
+- **Periods**: last 30 days, 90 days, year to date, 12 months, or a custom range back to July 2012. Every number is compared with the prior period of equal length.
+- **Areas**: citywide or any borough. Ranks and deciles are recomputed within the selected area.
+- **Metrics**: crashes, injuries, deaths, pedestrian and cyclist casualties, and crashes or injuries per 10,000 residents.
+- **Zip map**: zip codes shaded by decile, with hover details. Hovering a map zip highlights its table row and vice versa.
+- **Ranking table**: rank, value, multiple of the average zip, and change vs the prior period. Sortable, and exportable to CSV.
+- **Trends**: daily, weekly or 30-day totals against the prior period.
+- **When crashes happen**: an hour × weekday heat grid.
+- **Causes and vehicles**: top contributing factors and vehicle types.
+- **Zip details**: click any zip or search for one to see its totals, citywide and borough rank, trend, most dangerous intersections, and top factors.
+- **Shareable URLs**: every filter lives in the URL, and the back button works.
+- Light and dark themes, plus a mobile layout.
 
-- **Download Crash Data**: Easily download crash data directly from [CrashMapper](https://crashmapper.org).
-- **Data Cleaning**: Automatically fill in missing values using machine learning and statistical techniques.
-- **Data Filtering**: View crash data either for the entire city of NYC or filtered by specific boroughs.
-- **Statistical Breakdown**: View basic statistical summaries such as sums and averages by zip code.
-- **Decile Table**: Display crash data broken down into deciles, allowing for easy comparison and analysis.
-- **Heatmap Visualization**: Visualize the decile table data with a heatmap, showing the geographic distribution of crashs by zip code.
+## How missing zip codes are handled
 
-## Target Audience
+About a quarter of NYPD crash records have no zip code, but nearly all of those have coordinates. The dashboard groups those crashes by location and places each one into its zip with a point-in-polygon lookup against the zip boundaries. (The old version guessed with k-nearest-neighbours.) The few crashes with neither a zip nor usable coordinates are counted in a footnote under the map.
 
-The primary users of this tool are **injury attorney firms** who are looking for insights into crash trends across different neighborhoods. This data can help firms identify ideal locations for running ads or setting up new office locations based on crash frequency and severity.
+Change vs the prior period is computed from crashes recorded with a zip code in both periods, so the comparison is like for like.
 
+## Project layout
 
-## Technical Stack
+```
+index.html              the whole app (one page)
+css/styles.css          styles, light and dark tokens
+js/app.js               controller: URL state, loading, rendering
+js/api.js               NYC Open Data (SoQL) queries + localStorage cache
+js/stats.js             ranking, deciles, per-capita rates, time buckets
+js/geo.js               zip polygons, point-in-polygon lookup
+js/map.js               Leaflet choropleth
+js/charts.js            Chart.js trend and bar charts, hour grid
+data/nyc_zips.geojson   MODZCTA zip boundaries + population + borough (256 KB)
+scripts/build_geojson.py  one-off script that produced the GeoJSON
+tests/                  unit tests for stats.js and geo.js
+```
 
-The web application is built using the following technologies:
+Leaflet and Chart.js load from cdnjs. There is no build step.
 
-- **Backend**: Python (Flask for web framework)
-- **Frontend**: HTML, CSS, and JavaScript (for user interface)
-- **Data Storage**: CSV files (for storing accident data)
-- **Machine Learning**: Scikit-learn for data cleaning and prediction
-- **Geospatial Data**: GeoPandas for handling geospatial data
-- **Data Visualization**: Folium for interactive maps, Matplotlib for static visualizations
-- **Web Server**: Gunicorn (for serving the Flask application)
+## Run locally
 
+```sh
+python -m http.server 8000     # then open http://localhost:8000
+node tests/run.mjs             # unit tests (or open tests/stats.test.html in the browser)
+```
 
+The page has to be served over HTTP, not opened as a file, because it loads ES modules and the GeoJSON with `fetch`.
 
-## Data Sources & Licensing
+## Deploy (free)
 
-The accident data is sourced from [CrashMapper](https://crashmapper.org), which provides publicly available automobile, cyclist, and pedestrian accident data from New York City. 
+**GitHub Pages:** in the repository go to Settings → Pages, set *Source* to "Deploy from a branch", pick the branch and `/ (root)`, and save. The `.nojekyll` file makes Pages serve the files as they are.
 
-## How to Use
+Any static host works the same way, for example Cloudflare Pages or Netlify with no build command and the repository root as the output directory.
 
+## Data sources
 
+- Crashes: [Motor Vehicle Collisions – Crashes](https://data.cityofnewyork.us/Public-Safety/Motor-Vehicle-Collisions-Crashes/h9gi-nx95), NYPD via NYC Open Data.
+- Zip boundaries and population: [Modified Zip Code Tabulation Areas (MODZCTA)](https://data.cityofnewyork.us/Health/Modified-Zip-Code-Tabulation-Areas-MODZCTA-/pri4-ifjk), NYC DOHMH.
+- Basemap: Esri World Gray Canvas.
 
+Per-resident rates are only shown for zips with at least 5,000 residents. Below that, rates are dominated by commuters and visitors (e.g. the Financial District).
 
-## Future Improvements
+## Notes
 
-
-
+- Calls to NYC Open Data are anonymous, which is fine at this traffic level. If the site gets heavy use, register a free [app token](https://dev.socrata.com/docs/app-tokens.html) and add it as an `$$app_token` parameter in `js/api.js`.
+- Results are cached in the browser for 6 hours, so repeat visits and filter changes don't re-query the API.

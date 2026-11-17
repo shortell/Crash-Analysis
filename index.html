@@ -1,0 +1,179 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>NYC Crash Analysis</title>
+  <meta name="description" content="Live NYC motor vehicle crash data by zip code: crashes, injuries, deaths, trends and hotspots, straight from NYC Open Data.">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%232a78d6'/%3E%3Cpath d='M9 22V10l14 12V10' stroke='white' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+  <script>
+    // Apply the saved theme before first paint to avoid a flash.
+    try {
+      const t = localStorage.getItem('nyc-crash:theme');
+      if (t === 'light' || t === 'dark') document.documentElement.dataset.theme = t;
+    } catch {}
+  </script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+  <link rel="stylesheet" href="css/styles.css">
+  <script defer src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+  <script defer src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+  <script type="module" src="js/app.js"></script>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <span class="brand-mark" aria-hidden="true"></span>
+      <div>
+        <h1>NYC Crash Analysis</h1>
+        <p class="subtitle" id="data-through">Live NYPD collision data from NYC Open Data</p>
+      </div>
+    </div>
+    <button class="icon-btn" id="theme-toggle" type="button" aria-label="Theme: system">
+      <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="currentColor" d="M12 3a9 9 0 1 0 0 18V3z"/><circle cx="12" cy="12" r="8.25" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>
+      <span id="theme-label">System</span>
+    </button>
+  </header>
+
+  <nav class="controls" aria-label="Filters">
+    <div class="control">
+      <span class="control-label" id="range-label">Period</span>
+      <div class="segmented scroll" id="range-control" role="radiogroup" aria-labelledby="range-label"></div>
+      <div class="custom-range" id="custom-range" hidden>
+        <label><span class="sr-only">From</span><input type="date" id="custom-start"></label>
+        <span aria-hidden="true">–</span>
+        <label><span class="sr-only">To</span><input type="date" id="custom-end"></label>
+      </div>
+    </div>
+    <div class="control">
+      <span class="control-label" id="borough-label">Area</span>
+      <div class="segmented scroll" id="borough-control" role="radiogroup" aria-labelledby="borough-label"></div>
+    </div>
+    <div class="control">
+      <label class="control-label" for="metric-select">Rank zips by</label>
+      <select id="metric-select"></select>
+    </div>
+    <form class="control search" id="search-form" role="search">
+      <label class="control-label" for="zip-search">Find a zip</label>
+      <div class="search-box">
+        <input id="zip-search" inputmode="numeric" maxlength="5" pattern="[0-9]{5}" placeholder="e.g. 11207" list="zip-options" autocomplete="off">
+        <button type="submit" aria-label="Show zip">
+          <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><circle cx="11" cy="11" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="m16 16 4.5 4.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        </button>
+      </div>
+      <datalist id="zip-options"></datalist>
+      <p class="search-error" id="search-error" role="alert"></p>
+    </form>
+  </nav>
+
+  <main>
+    <div class="banner" id="banner" hidden role="alert"></div>
+
+    <section class="kpis" id="kpis" aria-label="Totals"></section>
+
+    <div class="main-grid">
+      <section class="card map-card">
+        <div class="card-head">
+          <div>
+            <h2 id="map-title">Crashes by zip code</h2>
+            <p class="card-sub" id="map-sub">Shaded by decile · darkest = top 10%</p>
+          </div>
+        </div>
+        <div id="map" class="map" aria-label="Map of zip codes"></div>
+        <div class="legend" id="legend" aria-hidden="true"></div>
+        <p class="status" id="zip-status" aria-live="polite"></p>
+      </section>
+
+      <section class="card table-card">
+        <div class="card-head">
+          <div>
+            <h2>Zip code ranking</h2>
+            <p class="card-sub" id="table-insight">&nbsp;</p>
+          </div>
+          <button class="btn" id="export-csv" type="button" disabled>
+            <svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><path d="M12 4v11m0 0-4.5-4.5M12 15l4.5-4.5M5 19h14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            CSV
+          </button>
+        </div>
+        <div class="table-wrap" id="table-wrap">
+          <table class="zip-table" id="zip-table">
+            <thead></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+
+    <div class="chart-grid">
+      <section class="card span-2">
+        <div class="card-head">
+          <div>
+            <h2 id="trend-title">Trend</h2>
+            <p class="card-sub" id="trend-sub">&nbsp;</p>
+          </div>
+          <div class="series-legend" aria-hidden="true">
+            <span><i class="key key-current"></i>This period</span>
+            <span><i class="key key-prior"></i>Prior period</span>
+          </div>
+        </div>
+        <div class="chart-box"><canvas id="trend-chart" role="img" aria-label="Trend over time"></canvas></div>
+      </section>
+
+      <section class="card span-2">
+        <div class="card-head">
+          <div>
+            <h2>When crashes happen</h2>
+            <p class="card-sub" id="hours-sub">&nbsp;</p>
+          </div>
+        </div>
+        <div class="hour-grid-wrap"><div class="hour-grid" id="hour-grid"></div></div>
+      </section>
+
+      <section class="card">
+        <div class="card-head">
+          <div>
+            <h2>Top contributing factors</h2>
+            <p class="card-sub">Primary factor cited for the first vehicle</p>
+          </div>
+        </div>
+        <div class="chart-box tall"><canvas id="factor-chart" role="img" aria-label="Top contributing factors"></canvas></div>
+      </section>
+
+      <section class="card">
+        <div class="card-head">
+          <div>
+            <h2>Vehicles involved</h2>
+            <p class="card-sub">Type of the first vehicle in each crash</p>
+          </div>
+        </div>
+        <div class="chart-box tall"><canvas id="vehicle-chart" role="img" aria-label="Vehicle types involved"></canvas></div>
+      </section>
+    </div>
+  </main>
+
+  <aside class="drawer" id="drawer" aria-labelledby="drawer-title" hidden>
+    <div class="drawer-head">
+      <div>
+        <p class="eyebrow" id="drawer-borough"></p>
+        <h2 id="drawer-title"></h2>
+        <p class="card-sub" id="drawer-pop"></p>
+      </div>
+      <button class="icon-btn" id="drawer-close" type="button" aria-label="Close zip details">
+        <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      </button>
+    </div>
+    <div class="drawer-body" id="drawer-body"></div>
+  </aside>
+  <div class="scrim" id="scrim" hidden></div>
+  <div class="tip" id="tip" role="tooltip" hidden></div>
+
+  <footer class="footer">
+    <p>
+      Source: <a href="https://data.cityofnewyork.us/Public-Safety/Motor-Vehicle-Collisions-Crashes/h9gi-nx95" target="_blank" rel="noopener">NYPD Motor Vehicle Collisions – Crashes</a>, NYC Open Data, queried live.
+      Crashes without a zip code are placed into a zip from their coordinates. Zip boundaries and population: NYC DOHMH MODZCTA.
+      Per-resident rates are shown only for zips with at least 5,000 residents.
+    </p>
+  </footer>
+
+  <noscript><p class="banner">This dashboard needs JavaScript to load live data.</p></noscript>
+</body>
+</html>
