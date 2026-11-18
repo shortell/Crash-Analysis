@@ -13,6 +13,7 @@ Each feature keeps:
   zips     every postal zip that maps to it (crash records use postal zips)
   pop      population estimate (for per-capita rates)
   borough  majority borough of all crashes ever recorded with that zip
+  sqmi     area in square miles (from the unsimplified polygon, NY State Plane)
 """
 import json
 import sys
@@ -24,6 +25,7 @@ import requests
 
 API = "https://data.cityofnewyork.us/resource/h9gi-nx95.json"
 OUT = Path(__file__).resolve().parent.parent / "data" / "nyc_zips.geojson"
+SQFT_PER_SQMI = 5280 ** 2
 TOLERANCE = 0.00012  # degrees, about 12 m
 BOROUGHS = {"MANHATTAN", "BRONX", "BROOKLYN", "QUEENS", "STATEN ISLAND"}
 
@@ -68,6 +70,8 @@ def split_zips(*values):
 def main(shp):
     gdf = gpd.read_file(shp).to_crs(4326)
     gdf = gdf[gdf["modzcta"] != "99999"]  # placeholder polygon with no population
+    # Area before simplifying, in NY State Plane (EPSG:2263, US feet) for accuracy.
+    gdf["sqmi"] = gdf.geometry.to_crs(2263).area / SQFT_PER_SQMI
     gdf["geometry"] = gdf.geometry.simplify(TOLERANCE, preserve_topology=True)
     counts = zip_borough_counts()
 
@@ -87,6 +91,7 @@ def main(shp):
                 "zips": zips,
                 "pop": int(row["pop_est"] or 0),
                 "borough": borough,
+                "sqmi": round(float(row["sqmi"]), 4),
             },
             "geometry": geom,
         })

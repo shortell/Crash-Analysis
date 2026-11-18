@@ -22,7 +22,6 @@
 <body>
   <header class="topbar">
     <div class="brand">
-      <span class="brand-mark" aria-hidden="true"></span>
       <div>
         <h1>NYC Crash Analysis</h1>
         <p class="subtitle" id="data-through">Live NYPD collision data from NYC Open Data</p>
@@ -103,6 +102,18 @@
       </section>
     </div>
 
+    <section class="card map-card density-card">
+      <div class="card-head">
+        <div>
+          <h2 id="density-title">Crashes per square mile by zip code</h2>
+          <p class="card-sub" id="density-sub">Adjusts for zip size: big zips naturally see more crashes</p>
+        </div>
+      </div>
+      <div id="density-map" class="map" aria-label="Map of crash density by zip code"></div>
+      <div class="legend" id="density-legend" aria-hidden="true"></div>
+      <p class="status" id="density-insight"></p>
+    </section>
+
     <div class="chart-grid">
       <section class="card span-2">
         <div class="card-head">
@@ -171,6 +182,7 @@
       Source: <a href="https://data.cityofnewyork.us/Public-Safety/Motor-Vehicle-Collisions-Crashes/h9gi-nx95" target="_blank" rel="noopener">NYPD Motor Vehicle Collisions – Crashes</a>, NYC Open Data, queried live.
       Crashes without a zip code are placed into a zip from their coordinates. Zip boundaries and population: NYC DOHMH MODZCTA.
       Per-resident rates are shown only for zips with at least 5,000 residents.
+      Per-square-mile density uses each zip's full area, so zips containing large parks or airports look less dense than their streets are.
     </p>
   </footer>
 

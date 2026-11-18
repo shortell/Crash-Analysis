@@ -4,7 +4,7 @@ import { loadZips, BOROUGHS, boroughName } from './geo.js';
 import {
   PRESETS, EARLIEST, METRICS, metricByKey, baseKey, formatMetric, rate,
   resolveRange, formatRange, formatDate, fmtInt, fmt1, fmtPct, pctChange,
-  buildZipRecords, rankRecords, bucketDays, bucketSeries, sumBetween, normalizeVehicles, titleCase,
+  buildZipRecords, rankRecords, densityMetric, bucketDays, bucketSeries, sumBetween, normalizeVehicles, titleCase,
 } from './stats.js';
 import { createMap } from './map.js';
 import { css, trendChart, barChart, hourGrid } from './charts.js';
@@ -65,6 +65,8 @@ window.addEventListener('popstate', () => {
 let geo;
 let latest;
 let zipMap;
+let densityMap;
+const eachMap = (fn) => [zipMap, densityMap].forEach((m) => m && fn(m));
 let renderToken = 0;
 const recordCache = new Map(); // range key -> { records, unplaced, complete }
 let current = { ranking: null, records: null, range: null, borough: null, metric: null };
@@ -88,15 +90,31 @@ async function init() {
   $('custom-start').max = $('custom-end').max = latest;
   $('zip-options').innerHTML = [...geo.postalToZip.keys()].sort().map((z) => `<option value="${z}">`).join('');
 
-  zipMap = createMap($('map'), geo, {
+  const handlers = {
     onHover: (zip, on) => {
       if (!inScope(zip)) return;
-      zipMap.highlight(zip, on);
+      eachMap((m) => m.highlight(zip, on));
       document.querySelector(`#zip-table tr[data-zip="${zip}"]`)?.classList.toggle('is-hover', on);
     },
     onSelect: (zip) => inScope(zip) && setState({ zip }),
-  });
+  };
+  zipMap = createMap($('map'), geo, handlers);
+  densityMap = createMap($('density-map'), geo, handlers);
+  linkViews(zipMap.map, densityMap.map);
   render();
+}
+
+// Keep the two maps' pan and zoom in step. The flag stops them re-triggering each other.
+function linkViews(a, b) {
+  let syncing = false;
+  const follow = (src, dst) => src.on('move', () => {
+    if (syncing) return;
+    syncing = true;
+    dst.setView(src.getCenter(), src.getZoom(), { animate: false });
+    syncing = false;
+  });
+  follow(a, b);
+  follow(b, a);
 }
 
 const inScope = (zip) => {
@@ -433,13 +451,20 @@ function drawZips(data, range, borough, metric) {
   $('legend').innerHTML = `<span>Top 10%</span><div class="legend-ramp">${c.ramp.map((col) => `<i style="background:${col}"></i>`).join('')}</div><span>Bottom 10%</span>`
     + (metric.perCapita ? `<span style="margin-left:auto"><i class="decile-chip" style="background:${c.empty}"></i>Too few residents</span>` : '');
 
+  const inArea = (f) => !borough || f.properties.borough === borough;
   zipMap.setTheme(themeNow());
-  zipMap.update({
-    ranking,
-    inScope: (f) => !borough || f.properties.borough === borough,
-    colors: c,
-    tooltip: (zip) => zipTooltip(zip, metric),
-  });
+  zipMap.update({ ranking, inScope: inArea, colors: c, tooltip: (zip) => zipTooltip(zip, metric, current.ranking) });
+
+  // Density map: the same count divided by each zip's area.
+  const dMetric = densityMetric(metric);
+  const dRanking = rankRecords(data.records, dMetric, borough);
+  current.densityRanking = dRanking;
+  $('density-title').textContent = `${dMetric.label} by zip code`;
+  $('density-sub').textContent = `${where} · ${formatRange(range)} · adjusts for zip size, since bigger zips naturally see more ${metricByKey(dMetric.base).short.toLowerCase()}`;
+  $('density-legend').innerHTML = `<span>Top 10%</span><div class="legend-ramp">${c.ramp.map((col) => `<i style="background:${col}"></i>`).join('')}</div><span>Bottom 10%</span>`;
+  densityMap.setTheme(themeNow());
+  densityMap.update({ ranking: dRanking, inScope: inArea, colors: c, tooltip: (zip) => zipTooltip(zip, dMetric, current.densityRanking) });
+  renderDensityInsight(dRanking, dMetric, ranking, borough);
   const fitKey = borough ?? 'all';
   if (lastFit !== fitKey) {
     zipMap.fit(geo.features.filter((f) => !borough || f.properties.borough === borough));
@@ -459,15 +484,32 @@ function drawZips(data, range, borough, metric) {
   renderDrawer();
 }
 
-function zipTooltip(zip, metric) {
-  const r = current.ranking?.byZip.get(zip);
+function zipTooltip(zip, metric, ranking) {
+  const r = ranking?.byZip.get(zip);
   const rec = current.records?.get(zip);
   if (!rec) return zip;
   const name = `<div class="tip-title">${zip} · ${esc(boroughName(rec.borough))}</div>`;
   if (!r) return `${name}${metric.perCapita ? 'Too few residents for a per-resident rate' : 'No crashes'}`;
   return `${name}${formatMetric(r.value, metric)} ${esc(metric.short.toLowerCase())}<br>`
-    + `Rank ${r.rank} of ${current.ranking.rows.length} · decile ${r.decile}<br>`
+    + (metric.perArea ? `${fmtInt(rec[metric.base])} ${esc(metricByKey(metric.base).short.toLowerCase())} over ${rec.sqmi.toFixed(2)} sq mi<br>` : '')
+    + `Rank ${r.rank} of ${ranking.rows.length} · decile ${r.decile}<br>`
     + `${r.vsAvg ? r.vsAvg.toFixed(2) + '× the average zip' : ''}`;
+}
+
+function renderDensityInsight(dRanking, dMetric, countRanking, borough) {
+  const el = $('density-insight');
+  const top = dRanking.rows[0];
+  if (!top) { el.textContent = ''; return; }
+  const where = borough ? `in ${boroughName(borough)}` : 'citywide';
+  const unit = dMetric.short.toLowerCase();
+  let text = `Densest ${where}: ${top.rec.zip} at ${fmtInt(top.value)} ${unit}, ${top.vsAvg.toFixed(1)}× the average zip.`;
+  // Show how the zip with the most crashes fares once size is taken into account.
+  const biggest = countRanking.rows[0];
+  const biggestDensity = biggest && dRanking.byZip.get(biggest.rec.zip);
+  if (biggestDensity && biggest.rec.zip !== top.rec.zip) {
+    text += ` ${biggest.rec.zip}, #1 by total, ranks #${biggestDensity.rank} by density (${biggest.rec.sqmi.toFixed(1)} sq mi).`;
+  }
+  el.textContent = text;
 }
 
 function renderInsight(ranking, metric, borough) {
@@ -544,11 +586,11 @@ $('zip-table').addEventListener('keydown', (e) => {
 });
 $('zip-table').addEventListener('mouseover', (e) => {
   const zip = e.target.closest('tr[data-zip]')?.dataset.zip;
-  if (zip) zipMap?.highlight(zip, true);
+  if (zip) eachMap((m) => m.highlight(zip, true));
 });
 $('zip-table').addEventListener('mouseout', (e) => {
   const zip = e.target.closest('tr[data-zip]')?.dataset.zip;
-  if (zip && !e.relatedTarget?.closest?.(`tr[data-zip="${zip}"]`)) zipMap?.highlight(zip, false);
+  if (zip && !e.relatedTarget?.closest?.(`tr[data-zip="${zip}"]`)) eachMap((m) => m.highlight(zip, false));
 });
 
 /* ---------- zip detail drawer ---------- */
@@ -563,8 +605,9 @@ function renderDrawer() {
   $('drawer').hidden = !open;
   $('scrim').hidden = !open || window.innerWidth >= 1280;
   document.body.classList.toggle('drawer-open', open);
-  if (wasOpen !== open) setTimeout(() => zipMap.invalidate(), 0);
+  if (wasOpen !== open) setTimeout(() => eachMap((m) => m.invalidate()), 0);
   zipMap.select(open ? zip : null);
+  densityMap.select(open ? zip : null, { fly: false }); // follows zipMap's view via linkViews
   if (!open) { drawerFor = null; return; }
 
   const { range, metric, records } = current;
@@ -601,6 +644,9 @@ function renderDrawer() {
         ${tile('Pedestrians', fmtInt(rec.ped))}
         ${tile('Cyclists', fmtInt(rec.cyc))}
         ${tile('Crashes / 10k', fmt1(rate(rec.n, pop)))}
+        ${tile('Crashes / sq mi', rec.sqmi > 0 ? fmtInt(rec.n / rec.sqmi) : '–')}
+        ${tile('Injured / sq mi', rec.sqmi > 0 ? fmtInt(rec.inj / rec.sqmi) : '–')}
+        ${tile('Area', rec.sqmi ? rec.sqmi.toFixed(2) + ' sq mi' : '–')}
       </div>
     </section>
     <section class="drawer-section">
@@ -659,12 +705,12 @@ function exportCSV() {
   const { ranking, range, borough, metric } = current;
   if (!ranking) return;
   const header = ['rank', 'decile', 'zip', 'borough', 'population', 'crashes', 'injured', 'killed',
-    'pedestrians_injured_or_killed', 'cyclists_injured_or_killed', 'crashes_per_10k', `${metric.key}_vs_avg`, `${metric.key}_change_vs_prior`];
+    'pedestrians_injured_or_killed', 'cyclists_injured_or_killed', 'crashes_per_10k', 'sq_mi', 'crashes_per_sq_mi', `${metric.key}_vs_avg`, `${metric.key}_change_vs_prior`];
   const lines = [header.join(',')];
   for (const r of ranking.rows) {
     const x = r.rec;
     lines.push([r.rank, r.decile, x.zip, `"${boroughName(x.borough)}"`, x.pop, x.n, x.inj, x.kil, x.ped, x.cyc,
-      rate(x.n, x.pop)?.toFixed(2) ?? '', r.vsAvg?.toFixed(3) ?? '', r.change?.toFixed(4) ?? ''].join(','));
+      rate(x.n, x.pop)?.toFixed(2) ?? '', x.sqmi, x.sqmi > 0 ? (x.n / x.sqmi).toFixed(1) : '', r.vsAvg?.toFixed(3) ?? '', r.change?.toFixed(4) ?? ''].join(','));
   }
   const blob = new Blob([lines.join('\n')], { type: 'text/csv' });
   const a = document.createElement('a');

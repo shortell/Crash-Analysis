@@ -84,10 +84,10 @@ export function createMap(el, geo, { onHover, onSelect }) {
       hovered = on ? zip : hovered === zip ? null : hovered;
       restyle();
     },
-    select(zip) {
+    select(zip, { fly = true } = {}) {
       selected = zip;
       restyle();
-      if (zip && byZip.get(zip)) {
+      if (fly && zip && byZip.get(zip)) {
         const b = byZip.get(zip).getBounds();
         if (!map.getBounds().contains(b)) map.flyToBounds(b, { maxZoom: 13, duration: 0.6 });
       }

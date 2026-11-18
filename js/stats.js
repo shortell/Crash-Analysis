@@ -82,7 +82,21 @@ export function rate(count, pop) {
 }
 
 export function metricValue(rec, m) {
-  return m.perCapita ? rate(rec[m.base], rec.pop) : rec[m.key];
+  if (m.perCapita) return rate(rec[m.base], rec.pop);
+  if (m.perArea) return rec.sqmi > 0 ? rec[m.base] / rec.sqmi : null;
+  return rec[m.key];
+}
+
+// The per-square-mile version of a metric (per-resident metrics use their underlying count).
+export function densityMetric(m) {
+  const base = metricByKey(baseKey(m));
+  return {
+    key: `${base.key}_sqmi`,
+    label: `${base.label} per square mile`,
+    short: `${base.short} / sq mi`,
+    base: base.key,
+    perArea: true,
+  };
 }
 
 export const formatMetric = (v, m) => (m.perCapita ? fmt1(v) : fmtInt(v));
@@ -107,7 +121,7 @@ export function buildZipRecords(geo, zipRows, pointRows, prevZipRows) {
   const records = new Map();
   for (const f of geo.features) {
     const { zip, borough, pop } = f.properties;
-    records.set(zip, { zip, borough, pop, ...ZERO(), tagged: ZERO(), prevTagged: ZERO(), placed: 0 });
+    records.set(zip, { zip, borough, pop, sqmi: f.properties.sqmi ?? 0, ...ZERO(), tagged: ZERO(), prevTagged: ZERO(), placed: 0 });
   }
   let unplaced = 0;
 
@@ -160,7 +174,7 @@ export function rankRecords(records, metric, borough = null) {
     r.rank = i + 1;
     r.decile = decileOf(r.rank, rows.length);
     r.vsAvg = avg > 0 ? r.value / avg : null;
-    r.share = !metric.perCapita && total > 0 ? r.value / total : null;
+    r.share = !metric.perCapita && !metric.perArea && total > 0 ? r.value / total : null;
     // Percent change on tiny counts (1 -> 6 deaths = +500%) is noise, so require a base of 5.
     r.change = r.rec.prevTagged[k] >= MIN_BASE_FOR_CHANGE ? pctChange(r.rec.tagged[k], r.rec.prevTagged[k]) : null;
   });

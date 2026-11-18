@@ -10,7 +10,8 @@ It is a static site with no server and no database. The browser queries [NYC Ope
 - **Periods**: last 30 days, 90 days, year to date, 12 months, or a custom range back to July 2012. Every number is compared with the prior period of equal length.
 - **Areas**: citywide or any borough. Ranks and deciles are recomputed within the selected area.
 - **Metrics**: crashes, injuries, deaths, pedestrian and cyclist casualties, and crashes or injuries per 10,000 residents.
-- **Zip map**: zip codes shaded by decile, with hover details. Hovering a map zip highlights its table row and vice versa.
+- **Zip map**: zip codes shaded white (low) to red (high) by decile, with hover details. Hovering a map zip highlights its table row and vice versa.
+- **Density map**: the same metric per square mile, so large zips don't rank high just for being large. It pans, zooms and highlights in step with the main map.
 - **Ranking table**: rank, value, multiple of the average zip, and change vs the prior period. Sortable, and exportable to CSV.
 - **Trends**: daily, weekly or 30-day totals against the prior period.
 - **When crashes happen**: an hour × weekday heat grid.
@@ -36,7 +37,7 @@ js/stats.js             ranking, deciles, per-capita rates, time buckets
 js/geo.js               zip polygons, point-in-polygon lookup
 js/map.js               Leaflet choropleth
 js/charts.js            Chart.js trend and bar charts, hour grid
-data/nyc_zips.geojson   MODZCTA zip boundaries + population + borough (256 KB)
+data/nyc_zips.geojson   MODZCTA zip boundaries + population, borough, area (258 KB)
 scripts/build_geojson.py  one-off script that produced the GeoJSON
 tests/                  unit tests for stats.js and geo.js
 ```
@@ -63,6 +64,8 @@ Any static host works the same way, for example Cloudflare Pages or Netlify with
 - Crashes: [Motor Vehicle Collisions – Crashes](https://data.cityofnewyork.us/Public-Safety/Motor-Vehicle-Collisions-Crashes/h9gi-nx95), NYPD via NYC Open Data.
 - Zip boundaries and population: [Modified Zip Code Tabulation Areas (MODZCTA)](https://data.cityofnewyork.us/Health/Modified-Zip-Code-Tabulation-Areas-MODZCTA-/pri4-ifjk), NYC DOHMH.
 - Basemap: Esri World Gray Canvas.
+
+Zip areas are computed from the full-resolution boundaries in NY State Plane feet. Per-square-mile density uses each zip's whole area, so zips containing large parks or airports look less dense than their streets are.
 
 Per-resident rates are only shown for zips with at least 5,000 residents. Below that, rates are dominated by commuters and visitors (e.g. the Financial District).
 

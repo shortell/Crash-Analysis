@@ -1,7 +1,7 @@
 // Unit tests for stats.js and geo.js. Run in Node (`node tests/run.mjs`) or open tests/stats.test.html.
 import {
   decileOf, rankRecords, resolveRange, addDays, daysBetween, bucketSeries, sumBetween,
-  pctChange, normalizeVehicles, metricByKey, buildZipRecords, rate,
+  pctChange, normalizeVehicles, metricByKey, buildZipRecords, rate, densityMetric, metricValue,
 } from '../js/stats.js';
 import { indexZips, pointInGeometry } from '../js/geo.js';
 
@@ -46,6 +46,17 @@ export async function runTests(geojson) {
     eq(r.rows.length, 1);
     near(r.rows[0].value, 10);
     eq(rate(5, 4999), null);
+  });
+
+  test('densityMetric divides the underlying count by area', () => {
+    const rec = { n: 120, inj: 30, pop: 20000, sqmi: 0.5 };
+    const d = densityMetric(metricByKey('n'));
+    eq([d.key, d.base, d.perArea], ['n_sqmi', 'n', true]);
+    near(metricValue(rec, d), 240);
+    const fromRate = densityMetric(metricByKey('inj_pc'));
+    eq(fromRate.base, 'inj');
+    near(metricValue(rec, fromRate), 60);
+    eq(metricValue({ ...rec, sqmi: 0 }, d), null);
   });
 
   test('date helpers', () => {
@@ -101,6 +112,14 @@ export async function runTests(geojson) {
       eq(geo.locate(40.8296, -73.9262), '10452', 'Yankee Stadium (west of River Ave)');
       eq(geo.locate(40.0, -73.0), null, 'Atlantic Ocean');
     });
+    test('zip areas are present and plausible', () => {
+      const areas = geo.features.map((f) => f.properties.sqmi);
+      eq(areas.every((a) => a > 0), true, 'every zip has an area');
+      const total = areas.reduce((a, b) => a + b, 0);
+      if (total < 280 || total > 310) throw new Error(`total area ${total} sq mi, expected ~300 (NYC land area)`);
+      const ts = geo.byZip.get('10036').properties.sqmi;
+      if (!(ts > 0.3 && ts < 1)) throw new Error(`10036 area ${ts}`);
+    });
     test('postal zips map to their MODZCTA polygon', () => {
       eq(geo.postalToZip.get('10110'), '10036');
       eq(geo.byZip.get('11207').properties.borough, 'BROOKLYN');
@@ -112,6 +131,7 @@ export async function runTests(geojson) {
         [{ zip_code: '10036', n: '10' }]);
       const r = records.get('10036');
       eq([r.n, r.tagged.n, r.prevTagged.n, r.placed, r.inj], [7, 5, 10, 2, 1]);
+      eq(r.sqmi, geo.byZip.get('10036').properties.sqmi);
       eq(unplaced, 10);
     });
   }
