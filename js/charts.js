@@ -37,12 +37,15 @@ function draw(canvas, config) {
   return chart;
 }
 
-export function trendChart(canvas, { current, previous, label, unitLabel }) {
+// Single-series trend line. series = { mode: 'avg7' | 'weekly' | '30-day', points: [{ from, to, tick, value }] }
+export function trendChart(canvas, { series, unitLabel }) {
+  const current = series.points;
+  const avg = series.mode === 'avg7';
   const accent = css('--series-1');
-  const ghost = css('--text-muted');
   const grid = css('--grid');
-  const tick = (b) => formatShortDate(b.from);
-  const title = (b) => (b.from === b.to ? formatDate(b.from) : `${formatShortDate(b.from)} – ${formatDate(b.to)}`);
+  const tick = (b) => formatShortDate(b.tick);
+  const title = (b) => (avg ? `7 days ending ${formatDate(b.to)}` : `${formatShortDate(b.from)} – ${formatDate(b.to)}`);
+  const value = (v) => (avg && v < 10 ? v.toFixed(1) : fmtInt(v));
 
   const opts = baseOptions();
   opts.interaction = { mode: 'index', intersect: false };
@@ -56,17 +59,13 @@ export function trendChart(canvas, { current, previous, label, unitLabel }) {
       beginAtZero: true,
       grid: { color: grid },
       border: { display: false },
-      ticks: { callback: (v) => fmtCompact(v), maxTicksLimit: 5, precision: 0 },
+      // small averages (a single zip) need a decimal so ticks don't repeat
+      ticks: { callback: (v) => (Number.isInteger(v) ? fmtCompact(v) : v.toFixed(1)), maxTicksLimit: 5 },
     },
   };
   opts.plugins.tooltip.callbacks = {
     title: (items) => title(current[items[0].dataIndex]),
-    label: (item) => {
-      const b = item.datasetIndex === 0 ? current[item.dataIndex] : previous[item.dataIndex];
-      if (!b) return '';
-      const when = item.datasetIndex === 0 ? 'This period' : `Prior (${title(b)})`;
-      return ` ${when}: ${fmtInt(b.value)} ${unitLabel}`;
-    },
+    label: (item) => ` ${value(item.raw)} ${unitLabel}${avg ? ' per day (average)' : ''}`,
   };
 
   return draw(canvas, {
@@ -75,7 +74,7 @@ export function trendChart(canvas, { current, previous, label, unitLabel }) {
       labels: current.map(tick),
       datasets: [
         {
-          label,
+          label: unitLabel,
           data: current.map((b) => b.value),
           borderColor: accent,
           backgroundColor: accent + '1a',
@@ -88,20 +87,6 @@ export function trendChart(canvas, { current, previous, label, unitLabel }) {
           pointBackgroundColor: accent,
           tension: 0.25,
           cubicInterpolationMode: 'monotone',
-        },
-        {
-          label: 'Prior period',
-          data: current.map((_, i) => previous[i]?.value ?? null),
-          borderColor: ghost,
-          borderWidth: 2,
-          borderDash: [],
-          pointRadius: 0,
-          pointHoverRadius: 4,
-          pointBackgroundColor: ghost,
-          pointHoverBorderColor: css('--surface'),
-          tension: 0.25,
-          cubicInterpolationMode: 'monotone',
-          fill: false,
         },
       ],
     },

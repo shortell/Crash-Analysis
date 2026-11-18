@@ -229,11 +229,6 @@ h2 { font-size: 15px; font-weight: 620; }
 .span-2 { grid-column: span 2; }
 .chart-box { position: relative; height: 260px; }
 .chart-box.tall { height: 340px; }
-.series-legend { display: flex; gap: 14px; font-size: 12px; color: var(--text-secondary); flex-wrap: wrap; }
-.series-legend span { display: inline-flex; align-items: center; gap: 6px; }
-.key { display: inline-block; width: 14px; height: 2px; border-radius: 1px; }
-.key-current { background: var(--series-1); }
-.key-prior { background: var(--text-muted); }
 
 .hour-grid-wrap { overflow-x: auto; }
 .hour-grid {

@@ -4,7 +4,7 @@ import { loadZips, BOROUGHS, boroughName } from './geo.js';
 import {
   PRESETS, EARLIEST, METRICS, metricByKey, baseKey, formatMetric, rate,
   resolveRange, formatRange, formatDate, fmtInt, fmt1, fmtPct, pctChange,
-  buildZipRecords, rankRecords, densityMetric, bucketDays, bucketSeries, sumBetween, normalizeVehicles, titleCase,
+  buildZipRecords, rankRecords, densityMetric, trendSeries, sumBetween, normalizeVehicles, titleCase,
 } from './stats.js';
 import { createMap } from './map.js';
 import { css, trendChart, barChart, hourGrid } from './charts.js';
@@ -355,20 +355,27 @@ function renderTrend(pDaily, range, borough, metric, live) {
   const card = cardOf('trend-chart');
   const key = baseKey(metric);
   const label = metricByKey(key).label;
-  const size = bucketDays(range.len);
   $('trend-title').textContent = `${label} over time`;
-  $('trend-sub').textContent = `${areaName(borough)} · ${size === 1 ? 'daily' : size === 7 ? 'weekly' : '30-day'} totals, compared with the prior ${range.len} days`;
   loading(card, true);
   pDaily.then((rows) => {
     if (!live()) return;
     loading(card, false);
-    trendChart($('trend-chart'), {
-      current: bucketSeries(rows, range, key, size),
-      previous: bucketSeries(rows, { ...range.prev, len: range.len }, key, size),
-      label,
-      unitLabel: label.toLowerCase(),
-    });
+    const series = trendSeries(rows, range, key);
+    $('trend-sub').textContent = `${areaName(borough)} · ${trendSummary(rows, range, key, series.mode, label)}`;
+    trendChart($('trend-chart'), { series, unitLabel: label.toLowerCase() });
   }).catch((err) => live() && failed(card, err));
+}
+
+// "7-day average · 236 a day, +0.1% vs the prior 90 days"
+function trendSummary(rows, range, key, mode, label) {
+  const cur = sumBetween(rows, range)[key];
+  const prev = sumBetween(rows, range.prev)[key];
+  const perDay = cur / range.len;
+  const rate = perDay >= 10 ? fmtInt(perDay) : fmt1(perDay);
+  const how = mode === 'avg7' ? '7-day average' : `${mode} totals`;
+  const change = pctChange(cur, prev);
+  return `${how} · ${rate} ${label.toLowerCase()} a day`
+    + (change == null ? '' : `, ${fmtPct(change)} vs the prior ${range.len} days`);
 }
 
 function renderHours(promise, live) {
@@ -658,7 +665,7 @@ function renderDrawer() {
     </section>
     <section class="drawer-section card-like" id="d-trend">
       <h3>Crashes over time</h3>
-      <p class="card-sub">Crashes recorded with this zip code, vs the prior ${range.len} days</p>
+      <p class="card-sub" id="d-trend-sub">Crashes recorded with this zip code</p>
       <div class="chart-box"><canvas id="d-trend-chart" role="img" aria-label="Crash trend for ${zip}"></canvas></div>
     </section>
     <section class="drawer-section">
@@ -675,14 +682,9 @@ function renderDrawer() {
   const span = { start: range.prev.start, end: range.end };
   api.daily(span, scope).then((rows) => {
     if (!still()) return;
-    // A single zip has few crashes per day, so use weekly buckets once the range passes a month.
-    const size = range.len <= 31 ? 1 : Math.max(7, bucketDays(range.len));
-    trendChart($('d-trend-chart'), {
-      current: bucketSeries(rows, range, 'n', size),
-      previous: bucketSeries(rows, { ...range.prev, len: range.len }, 'n', size),
-      label: 'Crashes',
-      unitLabel: 'crashes',
-    });
+    const series = trendSeries(rows, range, 'n');
+    $('d-trend-sub').textContent = `Crashes recorded with this zip code · ${trendSummary(rows, range, 'n', series.mode, 'Crashes')}`;
+    trendChart($('d-trend-chart'), { series, unitLabel: 'crashes' });
   }).catch(() => still() && ($('d-trend').querySelector('.chart-box').textContent = 'Couldn’t load the trend.'));
 
   const list = (id, rows, label, value) => {

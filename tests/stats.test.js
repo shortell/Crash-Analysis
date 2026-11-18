@@ -1,7 +1,7 @@
 // Unit tests for stats.js and geo.js. Run in Node (`node tests/run.mjs`) or open tests/stats.test.html.
 import {
   decileOf, rankRecords, resolveRange, addDays, daysBetween, bucketSeries, sumBetween,
-  pctChange, normalizeVehicles, metricByKey, buildZipRecords, rate, densityMetric, metricValue,
+  pctChange, normalizeVehicles, metricByKey, buildZipRecords, rate, densityMetric, metricValue, trendSeries,
 } from '../js/stats.js';
 import { indexZips, pointInGeometry } from '../js/geo.js';
 
@@ -82,6 +82,16 @@ export async function runTests(geojson) {
     eq(bucketSeries(rows, range, 'n', 7).map((b) => b.value), [5, 5]);
     eq(bucketSeries(rows, range, 'n', 7)[1], { from: '2026-01-08', to: '2026-01-10', value: 5 });
     eq(sumBetween(rows, { start: '2026-01-02', end: '2026-01-08' }).n, 8);
+  });
+  test('trendSeries: 7-day average for short ranges, borrowing prior days', () => {
+    const rows = Array.from({ length: 20 }, (_, i) => ({ d: addDays('2026-01-01', i) + 'T00:00:00.000', n: String(i < 10 ? 7 : 14) }));
+    const t = trendSeries(rows, { start: '2026-01-11', end: '2026-01-20', len: 10 }, 'n');
+    eq(t.mode, 'avg7');
+    eq(t.points.length, 10);
+    near(t.points[0].value, (7 * 6 + 14) / 7); // Jan 5-11: six 7s and one 14
+    near(t.points[9].value, 14);
+    eq([t.points[0].from, t.points[0].to], ['2026-01-05', '2026-01-11']);
+    eq(trendSeries(rows, { start: '2025-01-01', end: '2025-12-31', len: 365 }, 'n').mode, 'weekly');
   });
   test('pctChange', () => {
     near(pctChange(110, 100), 0.1);

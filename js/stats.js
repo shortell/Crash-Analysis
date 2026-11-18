@@ -201,6 +201,28 @@ export function bucketSeries(dailyRows, range, key, size) {
   return buckets;
 }
 
+// One readable line for the trend chart.
+// Up to ~3 months: a 7-day rolling average per day (the first days borrow from the prior
+// period, which the daily query already covers). Longer ranges: weekly or 30-day totals.
+export function trendSeries(dailyRows, range, key) {
+  if (range.len > 92) {
+    const size = bucketDays(range.len);
+    return {
+      mode: size === 7 ? 'weekly' : '30-day',
+      points: bucketSeries(dailyRows, range, key, size).map((b) => ({ ...b, tick: b.from })),
+    };
+  }
+  const byDay = new Map(dailyRows.map((r) => [r.d.slice(0, 10), counts(r)[key]]));
+  const points = [];
+  for (let i = 0; i < range.len; i++) {
+    const to = addDays(range.start, i);
+    let sum = 0;
+    for (let d = 0; d < 7; d++) sum += byDay.get(addDays(to, -d)) ?? 0;
+    points.push({ from: addDays(to, -6), to, tick: to, value: sum / 7 });
+  }
+  return { mode: 'avg7', points };
+}
+
 export function sumBetween(dailyRows, range) {
   return sumRows(dailyRows.filter((r) => {
     const d = r.d.slice(0, 10);
