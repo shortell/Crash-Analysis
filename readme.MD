@@ -10,8 +10,8 @@ It is a static site with no server and no database. The browser queries [NYC Ope
 - **Periods**: last 30 days, 90 days, year to date, 12 months, or a custom range back to July 2012. Every number is compared with the prior period of equal length.
 - **Areas**: citywide or any borough. Ranks and deciles are recomputed within the selected area.
 - **Metrics**: crashes, injuries, deaths, pedestrian and cyclist casualties, and crashes or injuries per 10,000 residents.
-- **Zip map**: zip codes shaded white (low) to red (high) by decile, with hover details. Hovering a map zip highlights its table row and vice versa.
-- **Density map**: the same metric per square mile, so large zips don't rank high just for being large. It pans, zooms and highlights in step with the main map.
+- **Zip map**: zip codes shaded white (low) to dark green (high) by decile, with hover details. Hovering a map zip highlights its table row and vice versa.
+- **Density map + ranking**: the same metric per square mile, so large zips don't rank high just for being large. Its own sortable table shows each zip's area, its rank by total, and how many places it moved. The map pans, zooms and highlights in step with the main map.
 - **Ranking table**: rank, value, multiple of the average zip, and change vs the prior period. Sortable, and exportable to CSV.
 - **Trends**: daily, weekly or 30-day totals against the prior period.
 - **When crashes happen**: an hour × weekday heat grid.

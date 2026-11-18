@@ -17,7 +17,6 @@ const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '
 
 const DEFAULTS = { range: '90d', start: '', end: '', area: 'all', metric: 'n', zip: '', trend: '' };
 let state = readURL();
-let sort = { key: 'rank', dir: 'asc' };
 
 function readURL() {
   const p = new URLSearchParams(location.search);
@@ -51,7 +50,7 @@ function setState(patch, { push = true } = {}) {
   }
   if (changed.length === 1 && changed[0] === 'zip' && current.ranking) {
     // Selecting a zip doesn't change any other view: just update the selection.
-    for (const tr of document.querySelectorAll('#zip-table tr[data-zip]')) {
+    for (const tr of document.querySelectorAll('.zip-table tr[data-zip]')) {
       tr.classList.toggle('is-selected', tr.dataset.zip === state.zip);
     }
     renderDrawer();
@@ -99,7 +98,7 @@ async function init() {
     onHover: (zip, on) => {
       if (!inScope(zip)) return;
       eachMap((m) => m.highlight(zip, on));
-      document.querySelector(`#zip-table tr[data-zip="${zip}"]`)?.classList.toggle('is-hover', on);
+      document.querySelectorAll(`.zip-table tr[data-zip="${zip}"]`).forEach((tr) => tr.classList.toggle('is-hover', on));
     },
     onSelect: (zip) => inScope(zip) && setState({ zip }),
   };
@@ -158,7 +157,8 @@ function buildStaticControls() {
     }
   });
   $('metric-select').addEventListener('change', (e) => {
-    sort = { key: 'rank', dir: 'asc' };
+    mainTable.resetSort();
+    densityTable.resetSort();
     setState({ metric: e.target.value });
   });
   $('search-form').addEventListener('submit', (e) => {
@@ -505,7 +505,11 @@ function drawZips(data, range, borough, metric) {
       + (missing ? ` ${fmtInt(missing)} couldn't be located and are left out of the zip ranking.` : '');
   }
 
-  renderTable(ranking, borough, metric, c);
+  mainTable.draw(ranking, borough, { metric, c });
+  // Rank by the underlying count so per-resident metrics compare against raw totals.
+  const totals = metric.perCapita ? rankRecords(data.records, metricByKey(baseKey(metric)), borough) : ranking;
+  densityTable.draw(dRanking, borough, { metric: dMetric, c, totals });
+  renderDensityTableInsight(dRanking, totals, borough);
   renderInsight(ranking, metric, borough);
   $('export-csv').disabled = !ranking.rows.length;
   renderDrawer();
@@ -554,71 +558,119 @@ function renderInsight(ranking, metric, borough) {
   el.textContent = `The top ${top.length} of ${n} zips ${where} account for ${Math.round(share * 100)}% of ${metric.short.toLowerCase()}.`;
 }
 
-const COLUMNS = [
-  { key: 'rank', label: 'Rank', cls: 'left', get: (r) => r.rank },
-  { key: 'zip', label: 'Zip', cls: 'left', get: (r) => r.rec.zip },
-  { key: 'borough', label: 'Borough', cls: 'left', citywideOnly: true, get: (r) => boroughName(r.rec.borough) },
-  { key: 'value', label: null, get: (r) => r.value },
-  { key: 'vsAvg', label: '× avg', title: 'Multiple of the average zip in this area', get: (r) => r.vsAvg },
-  { key: 'change', label: 'vs prior', title: 'Change from the previous period of equal length, for crashes recorded with a zip code. Shown when the prior period had at least 5.', get: (r) => r.change },
+// Ranking tables. Each column: key, label (string or fn of metric), get (sort value), cell (HTML).
+const chipCell = (r, ctx) => `<i class="decile-chip" style="background:${ctx.c.ramp[r.decile - 1]}" title="Decile ${r.decile}"></i>${r.rank}`;
+const COMMON_COLUMNS = [
+  { key: 'rank', label: 'Rank', cls: 'left', get: (r) => r.rank, cell: chipCell },
+  { key: 'zip', label: 'Zip', cls: 'left zip', get: (r) => r.rec.zip, cell: (r) => r.rec.zip },
+  { key: 'borough', label: 'Borough', cls: 'left muted', citywideOnly: true, get: (r) => boroughName(r.rec.borough), cell: (r) => esc(boroughName(r.rec.borough)) },
+  { key: 'value', label: (m) => m.short, cls: 'metric-col', get: (r) => r.value, cell: (r, ctx) => formatMetric(r.value, ctx.metric) },
 ];
 
-function renderTable(ranking, borough, metric, c) {
-  const cols = COLUMNS.filter((col) => !(col.citywideOnly && borough));
-  const table = $('zip-table');
-  table.tHead.innerHTML = `<tr>${cols.map((col) => {
-    const sorted = sort.key === col.key ? (sort.dir === 'asc' ? 'ascending' : 'descending') : null;
-    return `<th class="${col.cls ?? ''}" ${sorted ? `aria-sort="${sorted}"` : ''} ${col.title ? `title="${esc(col.title)}"` : ''}>
-      <button type="button" data-sort="${col.key}">${esc(col.label ?? metric.short)}</button></th>`;
-  }).join('')}</tr>`;
+const MAIN_COLUMNS = [
+  ...COMMON_COLUMNS,
+  { key: 'vsAvg', label: '× avg', title: 'Multiple of the average zip in this area', get: (r) => r.vsAvg, cell: (r) => (r.vsAvg == null ? '–' : r.vsAvg.toFixed(2) + '×') },
+  {
+    key: 'change', label: 'vs prior',
+    title: 'Change from the previous period of equal length, for crashes recorded with a zip code. Shown when the prior period had at least 5.',
+    get: (r) => r.change,
+    cls: (r) => (r.change == null || Math.abs(r.change) < 0.005 ? 'muted' : r.change > 0 ? 'delta-up' : 'delta-down'),
+    cell: (r) => fmtPct(r.change),
+  },
+];
 
-  const col = COLUMNS.find((x) => x.key === sort.key) ?? COLUMNS[0];
-  const rows = ranking.rows.slice().sort((a, b) => {
-    const va = col.get(a);
-    const vb = col.get(b);
-    if (va == null) return 1;
-    if (vb == null) return -1;
-    const d = typeof va === 'string' ? va.localeCompare(vb) : va - vb;
-    return sort.dir === 'asc' ? d : -d;
+// How a zip's rank moves once size is accounted for (positive = ranks higher by density).
+const totalRankOf = (r, ctx) => ctx.totals.byZip.get(r.rec.zip)?.rank ?? null;
+const shiftOf = (r, ctx) => { const t = totalRankOf(r, ctx); return t == null ? null : t - r.rank; };
+const DENSITY_COLUMNS = [
+  ...COMMON_COLUMNS,
+  { key: 'area', label: 'Sq mi', title: 'Zip code area in square miles', get: (r) => r.rec.sqmi, cell: (r) => r.rec.sqmi.toFixed(2) },
+  { key: 'totalRank', label: 'By total', title: 'Rank by total (not adjusted for size)', cls: 'muted', get: totalRankOf, cell: (r, ctx) => totalRankOf(r, ctx) ?? '–' },
+  {
+    key: 'shift', label: 'Moved', title: 'Places gained (▲) or lost (▼) compared with the ranking by total',
+    get: shiftOf,
+    cls: 'muted',
+    cell: (r, ctx) => { const d = shiftOf(r, ctx); return d == null ? '–' : d === 0 ? '—' : d > 0 ? `▲ ${d}` : `▼ ${-d}`; },
+  },
+];
+
+function createTable(el, columns) {
+  let sort = { key: 'rank', dir: 'asc' };
+  let args = null;
+
+  function draw(ranking, borough, ctx) {
+    args = [ranking, borough, ctx];
+    const cols = columns.filter((col) => !(col.citywideOnly && borough));
+    el.tHead.innerHTML = `<tr>${cols.map((col) => {
+      const sorted = sort.key === col.key ? (sort.dir === 'asc' ? 'ascending' : 'descending') : null;
+      const label = typeof col.label === 'function' ? col.label(ctx.metric) : col.label;
+      const align = typeof col.cls === 'string' && col.cls.includes('left') ? 'left' : '';
+      return `<th class="${align}" ${sorted ? `aria-sort="${sorted}"` : ''} ${col.title ? `title="${esc(col.title)}"` : ''}>
+        <button type="button" data-sort="${col.key}">${esc(label)}</button></th>`;
+    }).join('')}</tr>`;
+
+    const col = columns.find((x) => x.key === sort.key) ?? columns[0];
+    const rows = ranking.rows.slice().sort((a, b) => {
+      const va = col.get(a, ctx);
+      const vb = col.get(b, ctx);
+      if (va == null) return 1;
+      if (vb == null) return -1;
+      const d = typeof va === 'string' ? va.localeCompare(vb) : va - vb;
+      return (sort.dir === 'asc' ? d : -d) || a.rank - b.rank;
+    });
+
+    el.tBodies[0].innerHTML = rows.length ? rows.map((r) => `
+      <tr data-zip="${r.rec.zip}" class="${r.rec.zip === state.zip ? 'is-selected' : ''}" tabindex="0">
+        ${cols.map((c) => `<td class="${typeof c.cls === 'function' ? c.cls(r, ctx) : c.cls ?? ''}">${c.cell(r, ctx)}</td>`).join('')}
+      </tr>`).join('') : `<tr class="empty-row"><td colspan="${cols.length}">No data for this period.</td></tr>`;
+  }
+
+  el.addEventListener('click', (e) => {
+    const sortKey = e.target.closest('button[data-sort]')?.dataset.sort;
+    if (sortKey) {
+      const ascFirst = ['rank', 'zip', 'borough', 'totalRank'].includes(sortKey);
+      sort = sort.key === sortKey ? { key: sortKey, dir: sort.dir === 'asc' ? 'desc' : 'asc' } : { key: sortKey, dir: ascFirst ? 'asc' : 'desc' };
+      if (args) draw(...args);
+      return;
+    }
+    const zip = e.target.closest('tr[data-zip]')?.dataset.zip;
+    if (zip) setState({ zip });
+  });
+  el.addEventListener('keydown', (e) => {
+    const zip = e.target.closest?.('tr[data-zip]')?.dataset.zip;
+    if (zip && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); setState({ zip }); }
+  });
+  el.addEventListener('mouseover', (e) => {
+    const zip = e.target.closest('tr[data-zip]')?.dataset.zip;
+    if (zip) eachMap((m) => m.highlight(zip, true));
+  });
+  el.addEventListener('mouseout', (e) => {
+    const zip = e.target.closest('tr[data-zip]')?.dataset.zip;
+    if (zip && !e.relatedTarget?.closest?.(`tr[data-zip="${zip}"]`)) eachMap((m) => m.highlight(zip, false));
   });
 
-  table.tBodies[0].innerHTML = rows.length ? rows.map((r) => {
-    const ch = r.change;
-    const chCls = ch == null || Math.abs(ch) < 0.005 ? 'muted' : ch > 0 ? 'delta-up' : 'delta-down';
-    return `<tr data-zip="${r.rec.zip}" class="${r.rec.zip === state.zip ? 'is-selected' : ''}" tabindex="0">
-      <td class="left"><i class="decile-chip" style="background:${c.ramp[r.decile - 1]}" title="Decile ${r.decile}"></i>${r.rank}</td>
-      <td class="left zip">${r.rec.zip}</td>
-      ${borough ? '' : `<td class="left muted">${esc(boroughName(r.rec.borough))}</td>`}
-      <td class="metric-col">${formatMetric(r.value, metric)}</td>
-      <td>${r.vsAvg == null ? '–' : r.vsAvg.toFixed(2) + '×'}</td>
-      <td class="${chCls}">${fmtPct(ch)}</td>
-    </tr>`;
-  }).join('') : `<tr class="empty-row"><td colspan="${cols.length}">No data for this period.</td></tr>`;
+  return { draw, resetSort: () => { sort = { key: 'rank', dir: 'asc' }; } };
 }
 
-$('zip-table').addEventListener('click', (e) => {
-  const sortKey = e.target.closest('button[data-sort]')?.dataset.sort;
-  if (sortKey) {
-    const numericDesc = !['rank', 'zip', 'borough'].includes(sortKey);
-    sort = sort.key === sortKey ? { key: sortKey, dir: sort.dir === 'asc' ? 'desc' : 'asc' } : { key: sortKey, dir: numericDesc ? 'desc' : 'asc' };
-    if (current.ranking) renderTable(current.ranking, current.borough, current.metric, colors());
-    return;
+const mainTable = createTable($('zip-table'), MAIN_COLUMNS);
+const densityTable = createTable($('density-table'), DENSITY_COLUMNS);
+
+// "12 of the top 18 zips by total are also top 10% by density. Biggest climber: ..."
+function renderDensityTableInsight(dRanking, totals, borough) {
+  const el = $('density-table-insight');
+  const topD = dRanking.rows.filter((r) => r.decile === 1);
+  if (!topD.length) { el.textContent = 'No zips to rank in this period.'; return; }
+  const topT = new Set(totals.rows.filter((r) => r.decile === 1).map((r) => r.rec.zip));
+  const both = topD.filter((r) => topT.has(r.rec.zip)).length;
+  let climber = null;
+  for (const r of dRanking.rows) {
+    const t = totals.byZip.get(r.rec.zip)?.rank;
+    if (t != null && (!climber || t - r.rank > climber.d)) climber = { zip: r.rec.zip, from: t, to: r.rank, d: t - r.rank };
   }
-  const zip = e.target.closest('tr[data-zip]')?.dataset.zip;
-  if (zip) setState({ zip });
-});
-$('zip-table').addEventListener('keydown', (e) => {
-  const zip = e.target.closest?.('tr[data-zip]')?.dataset.zip;
-  if (zip && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); setState({ zip }); }
-});
-$('zip-table').addEventListener('mouseover', (e) => {
-  const zip = e.target.closest('tr[data-zip]')?.dataset.zip;
-  if (zip) eachMap((m) => m.highlight(zip, true));
-});
-$('zip-table').addEventListener('mouseout', (e) => {
-  const zip = e.target.closest('tr[data-zip]')?.dataset.zip;
-  if (zip && !e.relatedTarget?.closest?.(`tr[data-zip="${zip}"]`)) eachMap((m) => m.highlight(zip, false));
-});
+  const where = borough ? `in ${boroughName(borough)}` : 'citywide';
+  el.textContent = `${both} of the top ${topD.length} zips ${where} by density are also top 10% by total.`
+    + (climber && climber.d > 0 ? ` Biggest climber: ${climber.zip}, #${climber.from} → #${climber.to}.` : '');
+}
 
 /* ---------- zip detail drawer ---------- */
 
@@ -729,12 +781,12 @@ function exportCSV() {
   const { ranking, range, borough, metric } = current;
   if (!ranking) return;
   const header = ['rank', 'decile', 'zip', 'borough', 'population', 'crashes', 'injured', 'killed',
-    'pedestrians_injured_or_killed', 'cyclists_injured_or_killed', 'crashes_per_10k', 'sq_mi', 'crashes_per_sq_mi', `${metric.key}_vs_avg`, `${metric.key}_change_vs_prior`];
+    'pedestrians_injured_or_killed', 'cyclists_injured_or_killed', 'crashes_per_10k', 'sq_mi', 'crashes_per_sq_mi', `${metric.key}_density_rank`, `${metric.key}_vs_avg`, `${metric.key}_change_vs_prior`];
   const lines = [header.join(',')];
   for (const r of ranking.rows) {
     const x = r.rec;
     lines.push([r.rank, r.decile, x.zip, `"${boroughName(x.borough)}"`, x.pop, x.n, x.inj, x.kil, x.ped, x.cyc,
-      rate(x.n, x.pop)?.toFixed(2) ?? '', x.sqmi, x.sqmi > 0 ? (x.n / x.sqmi).toFixed(1) : '', r.vsAvg?.toFixed(3) ?? '', r.change?.toFixed(4) ?? ''].join(','));
+      rate(x.n, x.pop)?.toFixed(2) ?? '', x.sqmi, x.sqmi > 0 ? (x.n / x.sqmi).toFixed(1) : '', current.densityRanking?.byZip.get(x.zip)?.rank ?? '', r.vsAvg?.toFixed(3) ?? '', r.change?.toFixed(4) ?? ''].join(','));
   }
   const blob = new Blob([lines.join('\n')], { type: 'text/csv' });
   const a = document.createElement('a');

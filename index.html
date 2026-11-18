@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>NYC Crash Analysis</title>
   <meta name="description" content="Live NYC motor vehicle crash data by zip code: crashes, injuries, deaths, trends and hotspots, straight from NYC Open Data.">
-  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%232a78d6'/%3E%3Cpath d='M9 22V10l14 12V10' stroke='white' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23238b45'/%3E%3Cpath d='M9 22V10l14 12V10' stroke='white' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
   <script>
     // Apply the saved theme before first paint to avoid a flash.
     try {
@@ -102,17 +102,34 @@
       </section>
     </div>
 
-    <section class="card map-card density-card">
-      <div class="card-head">
-        <div>
-          <h2 id="density-title">Crashes per square mile by zip code</h2>
-          <p class="card-sub" id="density-sub">Adjusts for zip size: big zips naturally see more crashes</p>
+    <div class="main-grid">
+      <section class="card map-card">
+        <div class="card-head">
+          <div>
+            <h2 id="density-title">Crashes per square mile by zip code</h2>
+            <p class="card-sub" id="density-sub">Adjusts for zip size: big zips naturally see more crashes</p>
+          </div>
         </div>
-      </div>
-      <div id="density-map" class="map" aria-label="Map of crash density by zip code"></div>
-      <div class="legend" id="density-legend" aria-hidden="true"></div>
-      <p class="status" id="density-insight"></p>
-    </section>
+        <div id="density-map" class="map" aria-label="Map of crash density by zip code"></div>
+        <div class="legend" id="density-legend" aria-hidden="true"></div>
+        <p class="status" id="density-insight"></p>
+      </section>
+
+      <section class="card table-card">
+        <div class="card-head">
+          <div>
+            <h2>Ranking by density</h2>
+            <p class="card-sub" id="density-table-insight">&nbsp;</p>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table class="zip-table" id="density-table">
+            <thead></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </section>
+    </div>
 
     <div class="chart-grid">
       <section class="card span-2">
