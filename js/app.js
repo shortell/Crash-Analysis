@@ -4,7 +4,8 @@ import { loadZips, BOROUGHS, boroughName } from './geo.js';
 import {
   PRESETS, EARLIEST, METRICS, metricByKey, baseKey, formatMetric, rate,
   resolveRange, formatRange, formatDate, fmtInt, fmt1, fmtPct, pctChange,
-  buildZipRecords, rankRecords, densityMetric, trendSeries, sumBetween, normalizeVehicles, titleCase,
+  buildZipRecords, rankRecords, densityMetric, trendSeries, sumBetween, priorLabel,
+  GRANULARITIES, resolveGranularity, defaultGranularity, normalizeVehicles, titleCase,
 } from './stats.js';
 import { createMap } from './map.js';
 import { css, trendChart, barChart, hourGrid } from './charts.js';
@@ -14,7 +15,7 @@ const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '
 
 /* ---------- state (mirrored in the URL) ---------- */
 
-const DEFAULTS = { range: '90d', start: '', end: '', area: 'all', metric: 'n', zip: '' };
+const DEFAULTS = { range: '90d', start: '', end: '', area: 'all', metric: 'n', zip: '', trend: '' };
 let state = readURL();
 let sort = { key: 'rank', dir: 'asc' };
 
@@ -44,6 +45,10 @@ function setState(patch, { push = true } = {}) {
   state = { ...state, ...patch };
   writeURL(push);
   const changed = Object.keys(state).filter((k) => state[k] !== before[k]);
+  if (changed.length === 1 && changed[0] === 'trend' && lastTrend) {
+    renderTrend(...lastTrend); // only the trend chart depends on this
+    return;
+  }
   if (changed.length === 1 && changed[0] === 'zip' && current.ranking) {
     // Selecting a zip doesn't change any other view: just update the selection.
     for (const tr of document.querySelectorAll('#zip-table tr[data-zip]')) {
@@ -171,6 +176,10 @@ function buildStaticControls() {
     if (e.key === 'Escape' && state.zip) closeDrawer();
   });
   $('export-csv').addEventListener('click', exportCSV);
+  $('trend-gran').addEventListener('click', (e) => {
+    const b = e.target.closest('button[data-gran]');
+    if (b && !b.disabled) setState({ trend: b.dataset.gran });
+  });
   setupTheme();
   setupTooltips();
 }
@@ -340,7 +349,7 @@ function renderKPIs(pDaily, range, borough, live) {
         <div class="card kpi" title="${esc(t.title ?? t.label)} in ${esc(areaName(borough))}, ${esc(formatRange(range))}">
           <div class="kpi-label">${t.label}</div>
           <div class="kpi-value">${fmtInt(cur[t.key])}</div>
-          <div class="kpi-delta"><span class="${cls}">${arrow}${fmtPct(ch)}</span> vs prior ${range.len} days
+          <div class="kpi-delta"><span class="${cls}">${arrow}${fmtPct(ch)}</span> vs ${priorLabel(range.len)}
             <span class="hide-sm">· ${perDay >= 10 ? fmtInt(perDay) : fmt1(perDay)}/day</span></div>
         </div>`;
     }).join('');
@@ -351,31 +360,42 @@ function renderKPIs(pDaily, range, borough, live) {
   });
 }
 
+let lastTrend = null;
+
 function renderTrend(pDaily, range, borough, metric, live) {
+  lastTrend = [pDaily, range, borough, metric, live];
   const card = cardOf('trend-chart');
   const key = baseKey(metric);
   const label = metricByKey(key).label;
+  const gran = resolveGranularity(state.trend, range.len);
   $('trend-title').textContent = `${label} over time`;
+  $('trend-gran').innerHTML = GRANULARITIES.map((g) => {
+    const ok = g.allowed(range.len);
+    return `<button type="button" role="radio" data-gran="${g.id}" aria-checked="${g.id === gran}"`
+      + `${ok ? '' : ` disabled title="Not available for a ${range.len}-day period"`}>${g.label}</button>`;
+  }).join('');
   loading(card, true);
   pDaily.then((rows) => {
     if (!live()) return;
     loading(card, false);
-    const series = trendSeries(rows, range, key);
-    $('trend-sub').textContent = `${areaName(borough)} · ${trendSummary(rows, range, key, series.mode, label)}`;
+    const series = trendSeries(rows, range, key, gran);
+    const unit = { daily: 'day', weekly: 'week', monthly: 'month', yearly: 'year' }[gran];
+    const edges = series.points.some((p) => p.partial) ? ` · dashed = incomplete ${unit}` : '';
+    $('trend-sub').textContent = `${areaName(borough)} · ${trendSummary(rows, range, key, gran, label)}${edges}`;
     trendChart($('trend-chart'), { series, unitLabel: label.toLowerCase() });
   }).catch((err) => live() && failed(card, err));
 }
 
-// "7-day average · 236 a day, +0.1% vs the prior 90 days"
+// "weekly totals · 236 crashes a day, +0.1% vs the prior 90 days"
 function trendSummary(rows, range, key, mode, label) {
   const cur = sumBetween(rows, range)[key];
   const prev = sumBetween(rows, range.prev)[key];
   const perDay = cur / range.len;
   const rate = perDay >= 10 ? fmtInt(perDay) : fmt1(perDay);
-  const how = mode === 'avg7' ? '7-day average' : `${mode} totals`;
+  const how = `${mode} totals`;
   const change = pctChange(cur, prev);
   return `${how} · ${rate} ${label.toLowerCase()} a day`
-    + (change == null ? '' : `, ${fmtPct(change)} vs the prior ${range.len} days`);
+    + (change == null ? '' : `, ${fmtPct(change)} vs the ${priorLabel(range.len)}`);
 }
 
 function renderHours(promise, live) {
@@ -682,8 +702,10 @@ function renderDrawer() {
   const span = { start: range.prev.start, end: range.end };
   api.daily(span, scope).then((rows) => {
     if (!still()) return;
-    const series = trendSeries(rows, range, 'n');
-    $('d-trend-sub').textContent = `Crashes recorded with this zip code · ${trendSummary(rows, range, 'n', series.mode, 'Crashes')}`;
+    // A single zip has few crashes a day, so start one step coarser than the main chart.
+    const gran = resolveGranularity(range.len <= 45 ? 'weekly' : defaultGranularity(range.len), range.len);
+    const series = trendSeries(rows, range, 'n', gran);
+    $('d-trend-sub').textContent = `Crashes recorded with this zip code · ${trendSummary(rows, range, 'n', gran, 'Crashes')}`;
     trendChart($('d-trend-chart'), { series, unitLabel: 'crashes' });
   }).catch(() => still() && ($('d-trend').querySelector('.chart-box').textContent = 'Couldn’t load the trend.'));
 

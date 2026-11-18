@@ -60,6 +60,9 @@ export function fmtPct(v) {
 }
 export const pctChange = (cur, prev) => (prev > 0 ? (cur - prev) / prev : null);
 
+// "prior 90 days" for short periods, "prior 6.9 years" for long ones.
+export const priorLabel = (len) => (len <= 366 ? `prior ${len} days` : `prior ${(len / 365.25).toFixed(1)} years`);
+
 /* ---------- metrics ---------- */
 
 export const MIN_BASE_FOR_CHANGE = 5;
@@ -183,44 +186,58 @@ export function rankRecords(records, metric, borough = null) {
 
 /* ---------- time series ---------- */
 
-export function bucketDays(len) {
-  return len <= 92 ? 1 : len <= 731 ? 7 : 30;
+// Calendar buckets for the trend chart. Each option is offered only when the period
+// is long enough for it to be useful (and short enough not to drown in points).
+export const GRANULARITIES = [
+  { id: 'daily', label: 'Daily', allowed: (len) => len <= 366 },
+  { id: 'weekly', label: 'Weekly', allowed: (len) => len >= 14 && len <= 1100 },
+  { id: 'monthly', label: 'Monthly', allowed: (len) => len >= 60 },
+  { id: 'yearly', label: 'Yearly', allowed: (len) => len >= 730 },
+];
+
+export function defaultGranularity(len) {
+  return len <= 45 ? 'daily' : len <= 400 ? 'weekly' : 'monthly';
 }
 
-// Sum daily rows into fixed-length buckets starting at range.start.
-export function bucketSeries(dailyRows, range, key, size) {
-  const byDay = new Map(dailyRows.map((r) => [r.d.slice(0, 10), counts(r)[key]]));
-  const buckets = [];
-  for (let i = 0; i < range.len; i += size) {
-    const from = addDays(range.start, i);
-    const to = addDays(range.start, Math.min(i + size, range.len) - 1);
-    let v = 0;
-    for (let d = 0; d < size && i + d < range.len; d++) v += byDay.get(addDays(range.start, i + d)) ?? 0;
-    buckets.push({ from, to, value: v });
-  }
-  return buckets;
+// The requested granularity if the period allows it, otherwise the default.
+export function resolveGranularity(requested, len) {
+  const g = GRANULARITIES.find((x) => x.id === requested);
+  return g && g.allowed(len) ? g.id : defaultGranularity(len);
 }
 
-// One readable line for the trend chart.
-// Up to ~3 months: a 7-day rolling average per day (the first days borrow from the prior
-// period, which the daily query already covers). Longer ranges: weekly or 30-day totals.
-export function trendSeries(dailyRows, range, key) {
-  if (range.len > 92) {
-    const size = bucketDays(range.len);
-    return {
-      mode: size === 7 ? 'weekly' : '30-day',
-      points: bucketSeries(dailyRows, range, key, size).map((b) => ({ ...b, tick: b.from })),
-    };
+// Start and end (inclusive) of the calendar period containing `iso`.
+function periodOf(iso, gran) {
+  if (gran === 'daily') return [iso, iso];
+  if (gran === 'weekly') {
+    const monday = addDays(iso, -((toDate(iso).getUTCDay() + 6) % 7));
+    return [monday, addDays(monday, 6)];
   }
+  if (gran === 'monthly') {
+    const start = iso.slice(0, 7) + '-01';
+    const d = toDate(start);
+    const next = toISO(new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 1, 1)));
+    return [start, addDays(next, -1)];
+  }
+  return [iso.slice(0, 4) + '-01-01', iso.slice(0, 4) + '-12-31'];
+}
+
+// Sum daily rows into calendar buckets. Buckets cut off by the range ends are clipped
+// to the range and flagged `partial`, with the number of days they cover.
+export function trendSeries(dailyRows, range, key, gran) {
   const byDay = new Map(dailyRows.map((r) => [r.d.slice(0, 10), counts(r)[key]]));
   const points = [];
-  for (let i = 0; i < range.len; i++) {
-    const to = addDays(range.start, i);
-    let sum = 0;
-    for (let d = 0; d < 7; d++) sum += byDay.get(addDays(to, -d)) ?? 0;
-    points.push({ from: addDays(to, -6), to, tick: to, value: sum / 7 });
+  let day = range.start;
+  while (day <= range.end) {
+    const [pStart, pEnd] = periodOf(day, gran);
+    const to = pEnd < range.end ? pEnd : range.end;
+    let value = 0;
+    for (let d = day; d <= to; d = addDays(d, 1)) value += byDay.get(d) ?? 0;
+    const days = daysBetween(day, to);
+    const periodDays = daysBetween(pStart, pEnd);
+    points.push({ from: day, to, value, days, periodDays, partial: days < periodDays });
+    day = addDays(to, 1);
   }
-  return { mode: 'avg7', points };
+  return { gran, points };
 }
 
 export function sumBetween(dailyRows, range) {

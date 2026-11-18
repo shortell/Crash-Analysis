@@ -23,6 +23,8 @@ function baseOptions() {
         padding: 10,
         cornerRadius: 8,
         boxPadding: 4,
+        footerColor: css('--text-muted'),
+        footerFont: { weight: 'normal' },
         usePointStyle: true,
       },
     },
@@ -37,15 +39,24 @@ function draw(canvas, config) {
   return chart;
 }
 
-// Single-series trend line. series = { mode: 'avg7' | 'weekly' | '30-day', points: [{ from, to, tick, value }] }
+const fmtMonth = new Intl.DateTimeFormat('en-US', { month: 'short', year: 'numeric', timeZone: 'UTC' });
+const fmtMonthLong = new Intl.DateTimeFormat('en-US', { month: 'long', year: 'numeric', timeZone: 'UTC' });
+const utc = (iso) => new Date(iso + 'T00:00:00Z');
+
+// Single-series trend line. series = { gran, points: [{ from, to, value, days, partial }] }
 export function trendChart(canvas, { series, unitLabel }) {
   const current = series.points;
-  const avg = series.mode === 'avg7';
+  const { gran } = series;
   const accent = css('--series-1');
   const grid = css('--grid');
-  const tick = (b) => formatShortDate(b.tick);
-  const title = (b) => (avg ? `7 days ending ${formatDate(b.to)}` : `${formatShortDate(b.from)} – ${formatDate(b.to)}`);
-  const value = (v) => (avg && v < 10 ? v.toFixed(1) : fmtInt(v));
+  const tick = (b) => (gran === 'yearly' ? b.from.slice(0, 4)
+    : gran === 'monthly' ? fmtMonth.format(utc(b.from)) : formatShortDate(b.from));
+  const title = (b) => {
+    if (gran === 'daily') return formatDate(b.from);
+    if (gran === 'weekly') return `Week of ${formatShortDate(b.from)} – ${formatDate(b.to)}`;
+    const name = gran === 'monthly' ? fmtMonthLong.format(utc(b.from)) : b.from.slice(0, 4);
+    return b.partial ? `${name} (${formatShortDate(b.from)} – ${formatShortDate(b.to)})` : name;
+  };
 
   const opts = baseOptions();
   opts.interaction = { mode: 'index', intersect: false };
@@ -65,7 +76,11 @@ export function trendChart(canvas, { series, unitLabel }) {
   };
   opts.plugins.tooltip.callbacks = {
     title: (items) => title(current[items[0].dataIndex]),
-    label: (item) => ` ${value(item.raw)} ${unitLabel}${avg ? ' per day (average)' : ''}`,
+    label: (item) => ` ${fmtInt(item.raw)} ${unitLabel}`,
+    footer: (items) => {
+      const b = current[items[0].dataIndex];
+      return b.partial ? `Incomplete: only ${b.days} of ${b.periodDays} days are in the selected period` : '';
+    },
   };
 
   return draw(canvas, {
@@ -80,11 +95,16 @@ export function trendChart(canvas, { series, unitLabel }) {
           backgroundColor: accent + '1a',
           fill: 'origin',
           borderWidth: 2,
-          pointRadius: 0,
+          // Dots when there are few points; incomplete edge buckets get a hollow dot
+          // and a dashed segment so their lower totals don't read as a real drop.
+          pointRadius: (ctx) => (current[ctx.dataIndex]?.partial ? 4 : current.length <= 16 ? 3 : 0),
           pointHoverRadius: 5,
-          pointHoverBorderWidth: 2,
-          pointHoverBorderColor: css('--surface'),
-          pointBackgroundColor: accent,
+          pointBorderWidth: 2,
+          pointBorderColor: accent,
+          pointBackgroundColor: (ctx) => (current[ctx.dataIndex]?.partial ? css('--surface') : accent),
+          segment: {
+            borderDash: (ctx) => (current[ctx.p0DataIndex]?.partial || current[ctx.p1DataIndex]?.partial ? [5, 4] : undefined),
+          },
           tension: 0.25,
           cubicInterpolationMode: 'monotone',
         },

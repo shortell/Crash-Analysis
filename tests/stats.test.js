@@ -1,6 +1,6 @@
 // Unit tests for stats.js and geo.js. Run in Node (`node tests/run.mjs`) or open tests/stats.test.html.
 import {
-  decileOf, rankRecords, resolveRange, addDays, daysBetween, bucketSeries, sumBetween,
+  decileOf, rankRecords, resolveRange, addDays, daysBetween, sumBetween, resolveGranularity,
   pctChange, normalizeVehicles, metricByKey, buildZipRecords, rate, densityMetric, metricValue, trendSeries,
 } from '../js/stats.js';
 import { indexZips, pointInGeometry } from '../js/geo.js';
@@ -73,25 +73,33 @@ export async function runTests(geojson) {
     const c = resolveRange({ range: 'custom', start: '2027-01-01', end: '2010-01-01' }, '2026-11-13');
     eq([c.start, c.end], ['2012-07-01', '2026-11-13']);
   });
-  test('bucketSeries and sumBetween', () => {
+  test('sumBetween', () => {
     const rows = [
       { d: '2026-01-01T00:00:00.000', n: '2' }, { d: '2026-01-02T00:00:00.000', n: '3' },
       { d: '2026-01-08T00:00:00.000', n: '5' },
     ];
-    const range = { start: '2026-01-01', end: '2026-01-10', len: 10 };
-    eq(bucketSeries(rows, range, 'n', 7).map((b) => b.value), [5, 5]);
-    eq(bucketSeries(rows, range, 'n', 7)[1], { from: '2026-01-08', to: '2026-01-10', value: 5 });
     eq(sumBetween(rows, { start: '2026-01-02', end: '2026-01-08' }).n, 8);
   });
-  test('trendSeries: 7-day average for short ranges, borrowing prior days', () => {
-    const rows = Array.from({ length: 20 }, (_, i) => ({ d: addDays('2026-01-01', i) + 'T00:00:00.000', n: String(i < 10 ? 7 : 14) }));
-    const t = trendSeries(rows, { start: '2026-01-11', end: '2026-01-20', len: 10 }, 'n');
-    eq(t.mode, 'avg7');
-    eq(t.points.length, 10);
-    near(t.points[0].value, (7 * 6 + 14) / 7); // Jan 5-11: six 7s and one 14
-    near(t.points[9].value, 14);
-    eq([t.points[0].from, t.points[0].to], ['2026-01-05', '2026-01-11']);
-    eq(trendSeries(rows, { start: '2025-01-01', end: '2025-12-31', len: 365 }, 'n').mode, 'weekly');
+  test('trendSeries: calendar weeks (Mon start) with partial edges', () => {
+    const rows = Array.from({ length: 14 }, (_, i) => ({ d: addDays('2026-11-01', i) + 'T00:00:00.000', n: '1' }));
+    // 2026-11-01 is a Sunday
+    const t = trendSeries(rows, { start: '2026-11-01', end: '2026-11-14', len: 14 }, 'n', 'weekly');
+    eq(t.points.map((p) => [p.from, p.to, p.value, p.partial]),
+      [['2026-11-01', '2026-11-01', 1, true], ['2026-11-02', '2026-11-08', 7, false], ['2026-11-09', '2026-11-14', 6, true]]);
+  });
+  test('trendSeries: months and years', () => {
+    const rows = [{ d: '2024-02-29T00:00:00.000', n: '4' }, { d: '2025-01-15T00:00:00.000', n: '6' }];
+    const m = trendSeries(rows, { start: '2024-02-10', end: '2024-03-31', len: 51 }, 'n', 'monthly');
+    eq(m.points.map((p) => [p.from, p.to, p.value, p.partial]), [['2024-02-10', '2024-02-29', 4, true], ['2024-03-01', '2024-03-31', 0, false]]);
+    const y = trendSeries(rows, { start: '2024-01-01', end: '2025-06-30', len: 547 }, 'n', 'yearly');
+    eq(y.points.map((p) => [p.from, p.value, p.partial]), [['2024-01-01', 4, false], ['2025-01-01', 6, true]]);
+  });
+  test('resolveGranularity respects what the period allows', () => {
+    eq(resolveGranularity('yearly', 90), 'weekly');
+    eq(resolveGranularity('daily', 30), 'daily');
+    eq(resolveGranularity('daily', 800), 'monthly');
+    eq(resolveGranularity('yearly', 800), 'yearly');
+    eq(resolveGranularity('', 20), 'daily');
   });
   test('pctChange', () => {
     near(pctChange(110, 100), 0.1);
